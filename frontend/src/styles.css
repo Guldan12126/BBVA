@@ -340,6 +340,69 @@ input[type='checkbox'] { width: auto; }
 .botones-validacion { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 18px 0 12px; }
 .botones-validacion .btn { padding: 14px; font-size: 15px; }
 
+/* ---------- Login (dos paneles) ---------- */
+.login { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); background: var(--fondo); }
+.login-marca { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 32px; color: #fff; background: linear-gradient(150deg, #072146 0%, #004481 55%, #1464a5 100%); }
+.login-circulo { position: absolute; border-radius: 50%; background: rgba(255, 255, 255, 0.07); pointer-events: none; }
+.login-circulo-1 { width: 360px; height: 360px; top: -140px; left: -140px; }
+.login-circulo-2 { width: 260px; height: 260px; bottom: -100px; right: -90px; }
+.login-marca-contenido { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; max-width: 360px; }
+.login-logo { width: 190px; height: auto; margin-bottom: 28px; filter: brightness(0) invert(1); }
+.login-marca h2 { margin: 0 0 8px; font-size: 26px; font-weight: 700; color: #fff; }
+.login-marca p { margin: 0 0 28px; font-size: 14px; line-height: 1.5; color: rgba(255, 255, 255, 0.78); }
+.login-beneficios { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; width: 100%; }
+.login-beneficios li { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-radius: 999px; font-size: 13.5px; font-weight: 600; text-align: left; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.16); }
+.login-beneficio-icono { display: inline-grid; place-items: center; flex: none; width: 28px; height: 28px; border-radius: 50%; background: rgba(255, 255, 255, 0.18); }
+.login-pie { position: absolute; bottom: 22px; left: 0; right: 0; text-align: center; font-size: 12px; color: rgba(255, 255, 255, 0.6); }
+
+.login-lado-form { display: flex; align-items: center; justify-content: center; padding: 32px 16px; }
+.login-tarjeta { width: 100%; max-width: 400px; background: var(--superficie); border: 1px solid var(--borde); border-radius: 16px; padding: 32px; box-shadow: 0 12px 40px rgba(16, 24, 40, 0.1); }
+.login-logo-movil { display: none; }
+.login-escudo { width: 52px; height: 52px; margin: 0 auto 14px; display: grid; place-items: center; border-radius: 50%; background: var(--primario-claro); }
+.login-tarjeta h1 { margin: 0; text-align: center; font-size: 22px; }
+.login-subtitulo { margin: 4px 0 22px; text-align: center; font-size: 13.5px; color: var(--texto-suave); }
+
+.input-icono { position: relative; display: flex; align-items: center; }
+.input-icono > svg { position: absolute; left: 12px; color: var(--texto-suave); pointer-events: none; }
+.input-icono input { width: 100%; padding-left: 38px; padding-right: 40px; height: 42px; }
+.input-accion { position: absolute; right: 6px; display: grid; place-items: center; width: 30px; height: 30px; border: 0; border-radius: 6px; background: transparent; color: var(--texto-suave); cursor: pointer; }
+.input-accion:hover { color: var(--primario); background: var(--primario-claro); }
+
+.login-opciones { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin: 4px 0 18px; font-size: 13px; }
+.login-recordar { display: inline-flex; align-items: center; gap: 6px; color: var(--texto-suave); cursor: pointer; }
+.login-recordar input { width: 15px; height: 15px; margin: 0; accent-color: var(--primario); }
+.login-boton { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 44px; font-size: 15px; }
+a.login-boton:hover { text-decoration: none; }
+
+/* Recuperar contraseña */
+.login-escudo { color: var(--primario); }
+.login-escudo-ok { color: var(--verde); background: color-mix(in srgb, var(--verde) 14%, transparent); }
+.login-correo-destino { display: block; margin-top: 2px; color: var(--texto); word-break: break-all; }
+.pasos-numerados { display: flex; list-style: none; padding: 0; margin: 0 0 20px; }
+.pasos-numerados li { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; color: var(--texto-suave); }
+.pasos-numerados li + li::before { content: ''; position: absolute; top: 14px; right: 50%; width: 100%; height: 2px; background: var(--borde); z-index: 0; }
+.pasos-numerados li.activo::before, .pasos-numerados li.hecho::before { background: var(--primario); }
+.paso-num { position: relative; z-index: 1; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; font-size: 13px; font-weight: 700; background: var(--superficie); border: 2px solid var(--borde); color: var(--texto-suave); }
+.pasos-numerados li.activo .paso-num { border-color: var(--primario); color: var(--primario); box-shadow: 0 0 0 4px var(--primario-claro); }
+.pasos-numerados li.hecho .paso-num { border-color: var(--primario); background: var(--primario); color: #fff; }
+.pasos-numerados li.activo .paso-texto { color: var(--texto); font-weight: 600; }
+.campo-error { font-size: 12px; color: var(--rojo); }
+.login-reenviar { margin: 14px 0 0; text-align: center; font-size: 13px; color: var(--texto-suave); }
+.btn-texto { border: 0; padding: 0; background: none; font: inherit; color: var(--primario); cursor: pointer; }
+.btn-texto:hover { text-decoration: underline; }
+.login-volver { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 18px; font-size: 13px; }
+
+@media (max-width: 900px) {
+  .login { grid-template-columns: minmax(0, 1fr); }
+  .login-marca { display: none; }
+  .login-lado-form { background: linear-gradient(160deg, #072146 0%, #1464a5 100%); }
+  .login-logo-movil { display: block; width: 110px; margin: 0 auto 18px; }
+  .login-escudo { display: none; }
+}
+@media (max-width: 600px) {
+  .login-tarjeta { padding: 24px 18px; }
+}
+
 /* ---------- Responsive (tablet y celular) ---------- */
 @media (max-width: 1100px) {
   .form-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
