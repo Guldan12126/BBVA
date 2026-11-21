@@ -17,4 +17,7 @@ public interface CasoRepository extends JpaRepository<Caso, Long> {
 
     List<Caso> findByClienteId(Long clienteId);
 
+
+    long countByEstadoIn(java.util.Collection<EstadoCaso> estados);
+
 }

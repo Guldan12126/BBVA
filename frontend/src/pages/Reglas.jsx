@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import api, { mensajeError } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
-import { Aviso, Badge, Campo, Cargando, Encabezado, Modal, Vacio } from '../components/UI'
+import Icono from '../components/Icono'
+import { Aviso, Badge, Campo, Encabezado, InputPrefijo, Interruptor, Modal, PieModal, SeccionForm, TablaCargando, Vacio } from '../components/UI'
 import useApi from '../hooks/useApi'
 import { PERMISOS } from '../menu'
 
@@ -31,7 +32,7 @@ export default function Reglas() {
         {puedeEditar && <button className="btn btn-primario" onClick={() => setEditando({})}>+ Nueva regla</button>}
       </Encabezado>
       <Aviso>{error || errorAccion}</Aviso>
-      {cargando && !datos && <Cargando />}
+      {cargando && !datos && <TablaCargando columnas={5} />}
       {datos && (
         <section className="panel sin-padding">
           {datos.length === 0 ? <Vacio /> : (
@@ -65,44 +66,104 @@ export default function Reglas() {
   )
 }
 
+/** Cómo se interpreta el umbral de cada tipo (igual que ReglaFraudeService en el backend). */
+const AYUDA_TIPO = {
+  MONTO: { icono: 'transaccion', unidad: 'S/', prefijo: true, ejemplo: '5000', condicion: (u) => `el monto de la compra supere S/ ${u}` },
+  RATIO_MONTO: { icono: 'actividad', unidad: 'veces', ejemplo: '3', condicion: (u) => `la compra sea más de ${u} veces el gasto promedio del cliente` },
+  UBICACION: { icono: 'comercio', unidad: 'km', ejemplo: '300', condicion: (u) => `la compra se haga a más de ${u} km de su ciudad habitual` },
+  FRECUENCIA: { icono: 'reloj', unidad: 'compras', ejemplo: '5', condicion: (u) => `la tarjeta tenga ${u} o más compras en la última hora` },
+  HORARIO: { icono: 'reloj', unidad: 'h', ejemplo: '5', condicion: (u) => `la compra se haga antes de las ${u}:00 h` },
+  COMERCIO_RIESGO: { icono: 'escudo-alerta', unidad: '0 a 1', ejemplo: '0.3', condicion: (u) => `el riesgo base de la categoría sea ${u} o más, o el comercio tenga riesgo alto/crítico` },
+}
+
 function FormRegla({ regla, tipos, alCerrar, alGuardar }) {
   const [f, setF] = useState({ nombre: '', descripcion: '', tipo: tipos[0]?.tipo || 'MONTO', valorUmbral: '', peso: '0.2', activa: true, ...regla })
   const [error, setError] = useState(null)
+  const [enviando, setEnviando] = useState(false)
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value })
+
+  const ayuda = AYUDA_TIPO[f.tipo] || {}
+  const peso = Number(f.peso) || 0
+  const nivelPeso = peso >= 0.5 ? 'rojo' : peso >= 0.3 ? 'naranja' : peso >= 0.15 ? 'amarillo' : 'verde'
+  const umbral = f.valorUmbral === '' ? '…' : f.valorUmbral
 
   async function enviar(e) {
     e.preventDefault()
     setError(null)
-    const body = { nombre: f.nombre, descripcion: f.descripcion, tipo: f.tipo, valorUmbral: Number(f.valorUmbral), peso: Number(f.peso), activa: f.activa }
+    setEnviando(true)
+    const body = { nombre: f.nombre, descripcion: f.descripcion, tipo: f.tipo, valorUmbral: Number(f.valorUmbral), peso, activa: f.activa }
     try {
       if (regla.id) await api.put(`/api/reglas/${regla.id}`, body)
       else await api.post('/api/reglas', body)
       alGuardar()
     } catch (err) {
       setError(mensajeError(err))
+    } finally {
+      setEnviando(false)
     }
   }
 
   return (
-    <Modal titulo={regla.id ? 'Editar regla' : 'Nueva regla'} abierto alCerrar={alCerrar}>
-      <form onSubmit={enviar} className="form-grid">
-        <Aviso>{error}</Aviso>
-        <Campo etiqueta="Nombre"><input value={f.nombre} onChange={set('nombre')} required /></Campo>
-        <Campo etiqueta="Tipo">
-          <select value={f.tipo} onChange={set('tipo')}>
-            {tipos.map((t) => <option key={t.tipo} value={t.tipo}>{t.descripcion}</option>)}
-          </select>
-        </Campo>
-        <Campo etiqueta="Valor umbral" ayuda="Monto en S/, veces el promedio, km, n.º de compras, hora o riesgo de categoría, según el tipo">
-          <input type="number" step="any" value={f.valorUmbral} onChange={set('valorUmbral')} required />
-        </Campo>
-        <Campo etiqueta="Peso (0 a 1)"><input type="number" step="0.01" min="0" max="1" value={f.peso} onChange={set('peso')} required /></Campo>
-        <Campo etiqueta="Descripción"><textarea value={f.descripcion || ''} onChange={set('descripcion')} rows={2} /></Campo>
-        <label className="check"><input type="checkbox" checked={!!f.activa} onChange={(e) => setF({ ...f, activa: e.target.checked })} /> Regla activa</label>
-        <div className="modal-pie">
-          <button type="button" className="btn btn-sec" onClick={alCerrar}>Cancelar</button>
-          <button className="btn btn-primario">Guardar</button>
-        </div>
+    <Modal
+      titulo={regla.id ? 'Editar regla' : 'Nueva regla'}
+      subtitulo="Cada regla que se cumple suma su peso al score de reglas (máximo 1)"
+      icono="regla" abierto alCerrar={alCerrar} ancho={640}
+    >
+      <form onSubmit={enviar} className="form-modal">
+        <Aviso alCerrar={() => setError(null)}>{error}</Aviso>
+
+        <SeccionForm titulo="Definición" icono="regla">
+          <Campo etiqueta="Nombre de la regla" requerido ancho>
+            <input value={f.nombre} onChange={set('nombre')} placeholder="Ej. Compra de monto elevado" autoFocus required />
+          </Campo>
+          <Campo etiqueta="Tipo de regla" requerido ancho>
+            <select value={f.tipo} onChange={(e) => setF({ ...f, tipo: e.target.value, valorUmbral: '' })}>
+              {tipos.map((t) => <option key={t.tipo} value={t.tipo}>{t.descripcion}</option>)}
+            </select>
+          </Campo>
+          <Campo etiqueta="Valor umbral" requerido ancho>
+            <InputPrefijo
+              icono={ayuda.icono}
+              prefijo={ayuda.prefijo ? ayuda.unidad : undefined}
+              sufijo={!ayuda.prefijo ? ayuda.unidad : undefined}
+              type="number" step="any" value={f.valorUmbral} onChange={set('valorUmbral')}
+              placeholder={ayuda.ejemplo ? `Ej. ${ayuda.ejemplo}` : ''} required
+            />
+          </Campo>
+          {ayuda.condicion && (
+            <div className="nota nota-info campo-ancho">
+              <Icono nombre="ia" size={16} />
+              <span>
+                Se cumple cuando <strong>{ayuda.condicion(umbral)}</strong>.
+              </span>
+            </div>
+          )}
+        </SeccionForm>
+
+        <SeccionForm titulo="Impacto en el score" icono="actividad" columnas={1}>
+          <div className="campo">
+            <span className="campo-etiqueta">
+              Peso <span className="campo-requerido">*</span>
+              <span className={`peso-valor peso-${nivelPeso}`}>+{peso.toFixed(2)}</span>
+            </span>
+            <div className="peso-control">
+              <input type="range" min="0" max="1" step="0.01" value={peso} onChange={set('peso')}
+                style={{ '--pct': `${peso * 100}%` }} className={`rango rango-${nivelPeso}`} aria-label="Peso" />
+              <input type="number" min="0" max="1" step="0.01" value={f.peso} onChange={set('peso')} className="peso-numero" required aria-label="Peso exacto" />
+            </div>
+            <span className="campo-ayuda">
+              Si se cumple, suma <strong>{Math.round(peso * 100)} puntos</strong> de 100 al score de reglas.
+            </span>
+          </div>
+          <Campo etiqueta="Descripción" opcional extra={`${(f.descripcion || '').length}/300`}>
+            <textarea value={f.descripcion || ''} onChange={set('descripcion')} rows={2} maxLength={300}
+              placeholder="Explica para qué sirve la regla (se muestra en la tabla)" />
+          </Campo>
+          <Interruptor activo={f.activa} alCambiar={(v) => setF({ ...f, activa: v })} titulo="Regla activa"
+            descripcion={f.activa ? 'Se evaluará en cada transacción nueva' : 'Quedará guardada pero no se evaluará'} />
+        </SeccionForm>
+
+        <PieModal alCancelar={alCerrar} enviando={enviando} texto={regla.id ? 'Guardar cambios' : 'Crear regla'} />
       </form>
     </Modal>
   )

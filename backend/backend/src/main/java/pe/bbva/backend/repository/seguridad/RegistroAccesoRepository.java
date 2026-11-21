@@ -11,4 +11,9 @@ public interface RegistroAccesoRepository extends JpaRepository<RegistroAcceso, 
 
     Page<RegistroAcceso> findByCorreoIgnoreCaseOrderByFechaDesc(String correo, Pageable pageable);
 
+
+    long countByExitosoFalseAndFechaAfter(java.time.LocalDateTime desde);
+
+    java.util.List<RegistroAcceso> findTop6ByOrderByFechaDesc();
+
 }

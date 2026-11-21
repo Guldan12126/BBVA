@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-import { Aviso, Badge, BarraRiesgo, Cargando, Encabezado, Paginacion, SelectEnum, Vacio } from '../components/UI'
+import { Aviso, Badge, BarraRiesgo, Encabezado, Paginacion, SelectEnum, TablaCargando, Vacio } from '../components/UI'
 import useApi from '../hooks/useApi'
 import useTiempoReal from '../hooks/useTiempoReal'
 import { ENUMS, fechaHora, moneda } from '../utils/formato'
@@ -66,11 +66,20 @@ export default function Alertas() {
       </div>
 
       <Aviso>{error}</Aviso>
-      {cargando && !datos && <Cargando />}
+      {cargando && !datos && <TablaCargando columnas={10} />}
       {datos && (
         <section className="panel sin-padding">
           {datos.content.length === 0 ? (
-            <Vacio>No hay alertas con estos filtros 🎉</Vacio>
+            (nivel || estado) ? (
+              <Vacio icono="buscar" titulo="Sin resultados"
+                accion={<button className="btn btn-sec btn-sm" onClick={() => cambiar({ nivel: '', estado: '' })}>Limpiar filtros</button>}>
+                No hay alertas que coincidan con los filtros seleccionados.
+              </Vacio>
+            ) : (
+              <Vacio icono="escudo-ok" titulo={actual.id === 'mias' ? 'No tienes alertas asignadas' : 'Todo al día'}>
+                {actual.id === 'cola' ? 'No hay alertas pendientes de revisión.' : 'No hay alertas para mostrar.'}
+              </Vacio>
+            )
           ) : (
             <div className="tabla-scroll">
               <table className="tabla">

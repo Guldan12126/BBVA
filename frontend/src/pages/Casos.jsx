@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api, { mensajeError } from '../api/client'
-import { Aviso, Badge, Campo, Cargando, Encabezado, Modal, SelectEnum, Vacio } from '../components/UI'
+import Icono from '../components/Icono'
+import { Aviso, Badge, Campo, Encabezado, Modal, Opciones, PieModal, SeccionForm, SelectEnum, TablaCargando, Vacio } from '../components/UI'
 import useApi from '../hooks/useApi'
 import { ENUMS, fechaHora, moneda } from '../utils/formato'
 
@@ -21,7 +22,7 @@ export default function Casos() {
         <SelectEnum valores={ENUMS.estadoCaso} valor={estado} alCambiar={setEstado} todos="Todos los estados" aria-label="Estado" />
       </div>
       <Aviso>{error}</Aviso>
-      {cargando && !datos && <Cargando />}
+      {cargando && !datos && <TablaCargando columnas={6} />}
       {datos && (
         <section className="panel sin-padding">
           {datos.length === 0 ? <Vacio>No hay casos</Vacio> : (
@@ -51,35 +52,58 @@ export default function Casos() {
   )
 }
 
+const PRIORIDADES = [
+  { valor: 'BAJA', texto: 'Baja', tono: 'verde' },
+  { valor: 'MEDIA', texto: 'Media', tono: 'amarillo' },
+  { valor: 'ALTA', texto: 'Alta', tono: 'naranja' },
+  { valor: 'URGENTE', texto: 'Urgente', tono: 'rojo' },
+]
+
 export function FormCaso({ abierto, alCerrar, alGuardar, alertaInicial, clienteId }) {
   const [f, setF] = useState({ titulo: '', descripcion: '', prioridad: 'MEDIA' })
   const [alertaIds, setAlertaIds] = useState(alertaInicial ? [alertaInicial] : [])
   const [error, setError] = useState(null)
+  const [enviando, setEnviando] = useState(false)
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value })
 
   async function enviar(e) {
     e.preventDefault()
     setError(null)
+    setEnviando(true)
     try {
       const { data } = await api.post('/api/casos', { titulo: f.titulo, descripcion: f.descripcion, prioridad: f.prioridad, alertaIds, clienteId })
       alGuardar(data)
     } catch (err) {
       setError(mensajeError(err))
+    } finally {
+      setEnviando(false)
     }
   }
 
   return (
-    <Modal titulo="Nuevo caso" abierto={abierto} alCerrar={alCerrar}>
-      <form onSubmit={enviar} className="form-grid">
-        <Aviso>{error}</Aviso>
-        <Campo etiqueta="Título"><input value={f.titulo} onChange={set('titulo')} maxLength={150} required /></Campo>
-        <Campo etiqueta="Prioridad"><SelectEnum valores={ENUMS.prioridad} valor={f.prioridad} alCambiar={(v) => setF({ ...f, prioridad: v })} todos={false} /></Campo>
-        <Campo etiqueta="Descripción"><textarea value={f.descripcion} onChange={set('descripcion')} rows={3} maxLength={1000} /></Campo>
-        <SelectorAlertas abierto={abierto} seleccion={alertaIds} alCambiar={setAlertaIds} clienteId={clienteId} />
-        <div className="modal-pie">
-          <button type="button" className="btn btn-sec" onClick={alCerrar}>Cancelar</button>
-          <button className="btn btn-primario">Crear caso</button>
-        </div>
+    <Modal titulo="Nuevo caso de investigación" subtitulo="Agrupa alertas relacionadas para investigarlas juntas"
+      icono="caso" abierto={abierto} alCerrar={alCerrar} ancho={700}>
+      <form onSubmit={enviar} className="form-modal">
+        <Aviso alCerrar={() => setError(null)}>{error}</Aviso>
+
+        <SeccionForm titulo="Datos del caso" icono="caso" columnas={1}>
+          <Campo etiqueta="Título" requerido extra={`${f.titulo.length}/150`}>
+            <input value={f.titulo} onChange={set('titulo')} maxLength={150} placeholder="Ej. Compras no reconocidas en e-commerce" autoFocus required />
+          </Campo>
+          <Opciones etiqueta="Prioridad" nombre="prioridad" opciones={PRIORIDADES} valor={f.prioridad}
+            alCambiar={(v) => setF({ ...f, prioridad: v })} />
+          <Campo etiqueta="Descripción" opcional extra={`${f.descripcion.length}/1000`}>
+            <textarea value={f.descripcion} onChange={set('descripcion')} rows={3} maxLength={1000}
+              placeholder="Qué se sabe hasta ahora y qué se va a investigar" />
+          </Campo>
+        </SeccionForm>
+
+        <SeccionForm titulo="Alertas vinculadas" icono="alerta" columnas={1}>
+          <SelectorAlertas abierto={abierto} seleccion={alertaIds} alCambiar={setAlertaIds} clienteId={clienteId} />
+        </SeccionForm>
+
+        <PieModal alCancelar={alCerrar} enviando={enviando} icono="caso"
+          texto={alertaIds.length ? `Crear caso con ${alertaIds.length} alerta${alertaIds.length === 1 ? '' : 's'}` : 'Crear caso'} />
       </form>
     </Modal>
   )
@@ -88,13 +112,15 @@ export function FormCaso({ abierto, alCerrar, alGuardar, alertaInicial, clienteI
 /**
  * Lista de alertas activas con casillas y buscador (por código, cliente o últimos dígitos de la tarjeta),
  * para no tener que escribir IDs. Las alertas del mismo cliente del caso aparecen primero.
+ * Con "unica" se elige solo una (se usa en el detalle del caso).
  */
-function SelectorAlertas({ abierto, seleccion, alCambiar, clienteId }) {
+export function SelectorAlertas({ abierto, seleccion, alCambiar, clienteId, unica = false, excluir = [] }) {
   const activas = useApi(abierto ? '/api/alertas/cola' : null, { size: 200 })
   const [filtro, setFiltro] = useState('')
 
   const texto = filtro.trim().toLowerCase()
   const lista = (activas.datos?.content || [])
+    .filter((a) => !excluir.includes(a.id))
     .filter((a) => !a.caso || seleccion.includes(a.id))
     .filter((a) => {
       if (!texto) return true
@@ -107,30 +133,55 @@ function SelectorAlertas({ abierto, seleccion, alCambiar, clienteId }) {
       return mismo(x) - mismo(y)
     })
 
-  const alternar = (id) => alCambiar(seleccion.includes(id) ? seleccion.filter((x) => x !== id) : [...seleccion, id])
+  const alternar = (id) => {
+    if (unica) alCambiar([id])
+    else alCambiar(seleccion.includes(id) ? seleccion.filter((x) => x !== id) : [...seleccion, id])
+  }
 
   return (
     <div className="campo">
-      <span className="campo-etiqueta">Alertas vinculadas (opcional){seleccion.length > 0 && ` · ${seleccion.length} seleccionada(s)`}</span>
-      <input value={filtro} onChange={(e) => setFiltro(e.target.value)} placeholder="Buscar por código, cliente, DNI o últimos 4 dígitos…" />
-      <div className="selector-alertas">
-        {activas.cargando && !activas.datos && <small className="muted">Cargando alertas…</small>}
-        {activas.error && <small className="campo-error">{activas.error}</small>}
-        {activas.datos && lista.length === 0 && <small className="muted">No hay alertas activas que coincidan</small>}
-        {lista.map((a) => {
-          const c = a.transaccion?.tarjeta?.cliente
-          return (
-            <label key={a.id} className="check">
-              <input type="checkbox" checked={seleccion.includes(a.id)} onChange={() => alternar(a.id)} />
-              <span>
-                <span className="mono">{a.codigo}</span> · {c?.nombres} {c?.apellidos} · ****{a.transaccion?.tarjeta?.ultimosDigitos}
-                {' · '}{moneda(a.transaccion?.monto)} <Badge valor={a.nivelRiesgo} />
-              </span>
-            </label>
-          )
-        })}
+      {!unica && (
+        <span className="campo-etiqueta">
+          Selecciona las alertas <span className="campo-opcional">(opcional)</span>
+          {seleccion.length > 0 && <span className="campo-extra"><span className="perfil-contador">{seleccion.length}</span></span>}
+        </span>
+      )}
+      <div className="selector-buscable">
+        <span className="input-prefijo">
+          <span className="input-prefijo-icono"><Icono nombre="buscar" size={16} /></span>
+          <input value={filtro} onChange={(e) => setFiltro(e.target.value)} placeholder="Buscar por código, cliente, DNI o últimos 4 dígitos…" aria-label="Buscar alerta" />
+        </span>
+        <ul role="listbox" aria-multiselectable={!unica}>
+          {activas.cargando && !activas.datos && <li className="selector-vacio">Cargando alertas…</li>}
+          {activas.error && <li className="selector-vacio campo-error">{activas.error}</li>}
+          {activas.datos && lista.length === 0 && <li className="selector-vacio">No hay alertas activas que coincidan</li>}
+          {lista.map((a) => {
+            const c = a.transaccion?.tarjeta?.cliente
+            const sel = seleccion.includes(a.id)
+            const mismoCliente = clienteId && c?.id === clienteId
+            return (
+              <li key={a.id} role="option" aria-selected={sel}>
+                <button type="button" className={`selector-alerta ${sel ? 'sel' : ''}`} onClick={() => alternar(a.id)}>
+                  <span className={`selector-check ${unica ? 'radio' : ''}`}>{sel && <Icono nombre="check" size={12} />}</span>
+                  <span className={`prioridad-marca marca-${a.nivelRiesgo}`} />
+                  <span className="selector-alerta-datos">
+                    <span className="selector-titulo">
+                      <span className="mono">{a.codigo}</span> · {c?.nombres} {c?.apellidos}
+                      {mismoCliente && <span className="etiqueta-mini">Mismo cliente</span>}
+                    </span>
+                    <span className="selector-sub">****{a.transaccion?.tarjeta?.ultimosDigitos} · {a.transaccion?.comercio?.nombre || '—'}</span>
+                  </span>
+                  <span className="selector-alerta-fin">
+                    <strong>{moneda(a.transaccion?.monto)}</strong>
+                    <Badge valor={a.nivelRiesgo} />
+                  </span>
+                </button>
+              </li>
+            )
+          })}
+        </ul>
       </div>
-      <span className="campo-ayuda">También puedes agregar alertas después, desde el detalle del caso.</span>
+      {!unica && <span className="campo-ayuda">También puedes agregar alertas después, desde el detalle del caso.</span>}
     </div>
   )
 }

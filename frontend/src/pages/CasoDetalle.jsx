@@ -5,6 +5,7 @@ import { Aviso, Badge, BarraRiesgo, Campo, Cargando, Detalles, Encabezado, Modal
 import useApi from '../hooks/useApi'
 import { fechaHora, moneda } from '../utils/formato'
 import { ModalTexto } from './AlertaDetalle'
+import { SelectorAlertas } from './Casos'
 
 export default function CasoDetalle() {
   const { id } = useParams()
@@ -88,35 +89,26 @@ export default function CasoDetalle() {
       </div>
 
       <ModalTexto abierto={modal === 'cerrar'} titulo="Cerrar caso" etiqueta="Conclusión de la investigación" max={1000}
+        icono="caso" tono="verde" subtitulo="Al cerrarlo ya no se podrán agregar más alertas" textoBoton="Cerrar caso"
+        placeholder="Resume lo que se encontró y qué medidas se tomaron"
         error={errorAccion} alCerrar={() => setModal(null)}
         alEnviar={(conclusion) => accion(() => api.patch(`/api/casos/${id}/cerrar`, { conclusion }), 'Caso cerrado')} />
-      <ModalAlerta abierto={modal === 'alerta'} error={errorAccion} alCerrar={() => setModal(null)}
+      <ModalAlerta abierto={modal === 'alerta'} error={errorAccion} clienteId={c.cliente?.id}
+        yaVinculadas={(alertas.datos || []).map((x) => x.id)} alCerrar={() => setModal(null)}
         alEnviar={(alertaId) => accion(() => api.patch(`/api/casos/${id}/alertas/${alertaId}`), 'Alerta agregada al caso')} />
     </>
   )
 }
 
-function ModalAlerta({ abierto, alCerrar, alEnviar, error }) {
-  const activas = useApi(abierto ? '/api/alertas/cola' : null, { size: 100 })
-  const [alertaId, setAlertaId] = useState('')
+function ModalAlerta({ abierto, alCerrar, alEnviar, error, enviando, yaVinculadas, clienteId }) {
+  const [seleccion, setSeleccion] = useState([])
   return (
-    <Modal titulo="Agregar alerta al caso" abierto={abierto} alCerrar={alCerrar}>
-      <form onSubmit={(e) => { e.preventDefault(); alEnviar(alertaId) }}>
+    <Modal titulo="Agregar alerta al caso" subtitulo="Elige una alerta activa para sumarla a la investigación"
+      icono="alerta" abierto={abierto} alCerrar={alCerrar} ancho={640}>
+      <form className="form-modal" onSubmit={async (e) => { e.preventDefault(); if (await alEnviar(seleccion[0])) setSeleccion([]) }}>
         <Aviso>{error}</Aviso>
-        <Campo etiqueta="Alerta activa">
-          <select value={alertaId} onChange={(e) => setAlertaId(e.target.value)} required>
-            <option value="">Selecciona…</option>
-            {(activas.datos?.content || []).map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.codigo} — {a.transaccion?.tarjeta?.cliente?.nombres} {a.transaccion?.tarjeta?.cliente?.apellidos} — {moneda(a.transaccion?.monto)}
-              </option>
-            ))}
-          </select>
-        </Campo>
-        <div className="modal-pie">
-          <button type="button" className="btn btn-sec" onClick={alCerrar}>Cancelar</button>
-          <button className="btn btn-primario">Agregar</button>
-        </div>
+        <SelectorAlertas abierto={abierto} seleccion={seleccion} alCambiar={setSeleccion} clienteId={clienteId} unica excluir={yaVinculadas} />
+        <PieModal alCancelar={alCerrar} enviando={enviando} texto="Agregar al caso" icono="caso" deshabilitado={!seleccion.length} />
       </form>
     </Modal>
   )

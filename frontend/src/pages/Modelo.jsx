@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import api, { mensajeError } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
-import { Aviso, Badge, Cargando, Detalles, Encabezado, Vacio } from '../components/UI'
+import { Aviso, Badge, Cargando, Detalles, Encabezado, Vacio, useConfirmar } from '../components/UI'
 import useApi from '../hooks/useApi'
 import { PERMISOS } from '../menu'
 import { fechaHora, porcentaje } from '../utils/formato'
@@ -15,6 +15,7 @@ export default function Modelo() {
   const [aviso, setAviso] = useState(null)
   const [error, setError] = useState(null)
   const [ocupado, setOcupado] = useState(false)
+  const [confirmar, dialogo] = useConfirmar()
   const esAdmin = tieneRol(...PERMISOS.editarModelo)
   const e = estado.datos
 
@@ -44,7 +45,7 @@ export default function Modelo() {
               Verificar conexión
             </button>
             <button className="btn btn-primario" disabled={ocupado || !e?.feedbackPendiente}
-              onClick={() => window.confirm('¿Reentrenar el modelo con las decisiones de los analistas?') &&
+              onClick={async () => (await confirmar({ titulo: '¿Reentrenar el modelo?', mensaje: 'Se entrenará una nueva versión con las decisiones de los analistas y quedará activa al terminar.', textoOk: 'Reentrenar', tono: 'primario', icono: 'ia' })) &&
                 ejecutar(() => api.post('/api/modelo/reentrenar'), (v) => `Nueva versión ${v.version} activa`)}>
               {ocupado ? 'Procesando…' : 'Reentrenar modelo'}
             </button>
@@ -119,6 +120,7 @@ export default function Modelo() {
           ) : <Vacio>Sin versiones registradas</Vacio>}
         </section>
       </div>
+      {dialogo}
     </>
   )
 }

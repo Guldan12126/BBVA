@@ -1,5 +1,6 @@
 package pe.bbva.backend.repository.notificacion;
 
+import java.util.Collection;
 import org.springframework.data.jpa.repository.JpaRepository;
 import pe.bbva.backend.model.enums.*;
 import pe.bbva.backend.model.notificacion.Notificacion;
@@ -19,5 +20,12 @@ public interface NotificacionRepository extends JpaRepository<Notificacion, Long
     List<Notificacion> findAllByOrderByFechaEnvioDesc();
 
     List<Notificacion> findByEstadoAndFechaExpiracionBefore(EstadoNotificacion estado, LocalDateTime limite);
+
+
+    long countByEstado(EstadoNotificacion estado);
+
+    long countByEstadoIn(Collection<EstadoNotificacion> estados);
+
+    List<Notificacion> findTop8ByEstadoInOrderByFechaEnvioDesc(Collection<EstadoNotificacion> estados);
 
 }

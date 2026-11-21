@@ -12,4 +12,7 @@ public interface ListaNegraRepository extends JpaRepository<ListaNegra, Long> {
 
     List<ListaNegra> findAllByOrderByFechaCreacionDesc();
 
+
+    long countByActivoTrue();
+
 }

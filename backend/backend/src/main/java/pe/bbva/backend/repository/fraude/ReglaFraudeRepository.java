@@ -11,4 +11,7 @@ public interface ReglaFraudeRepository extends JpaRepository<ReglaFraude, Long> 
 
     List<ReglaFraude> findAllByOrderByIdAsc();
 
+
+    long countByActivaTrue();
+
 }

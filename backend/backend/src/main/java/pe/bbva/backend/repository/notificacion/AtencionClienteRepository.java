@@ -1,5 +1,6 @@
 package pe.bbva.backend.repository.notificacion;
 
+import java.time.LocalDateTime;
 import org.springframework.data.jpa.repository.JpaRepository;
 import pe.bbva.backend.model.notificacion.AtencionCliente;
 
@@ -10,5 +11,10 @@ public interface AtencionClienteRepository extends JpaRepository<AtencionCliente
     List<AtencionCliente> findByAlertaIdOrderByFechaDesc(Long alertaId);
 
     List<AtencionCliente> findByOperadorIdOrderByFechaDesc(Long operadorId);
+
+
+    List<AtencionCliente> findByOperadorIdAndFechaBetweenOrderByFechaDesc(Long operadorId, LocalDateTime desde, LocalDateTime hasta);
+
+    long countByOperadorIdAndFechaBetween(Long operadorId, LocalDateTime desde, LocalDateTime hasta);
 
 }

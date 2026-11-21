@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Aviso, Badge, BarraRiesgo, Cargando, Encabezado, Paginacion, SelectEnum, Vacio } from '../components/UI'
+import { Aviso, Badge, BarraRiesgo, Encabezado, Paginacion, SelectEnum, TablaCargando, Vacio } from '../components/UI'
 import useApi from '../hooks/useApi'
 import { ENUMS, etiqueta, fechaHora, moneda } from '../utils/formato'
 
@@ -42,10 +42,15 @@ export default function Transacciones() {
       </div>
 
       <Aviso>{error}</Aviso>
-      {cargando && !datos && <Cargando />}
+      {cargando && !datos && <TablaCargando columnas={8} />}
       {datos && (
         <section className="panel sin-padding">
-          {datos.content.length === 0 ? <Vacio>No se encontraron transacciones</Vacio> : (
+          {datos.content.length === 0 ? <Vacio icono="buscar" titulo="No se encontraron transacciones"
+              accion={Object.values(filtros).some(Boolean) && (
+                <button className="btn btn-sec btn-sm" onClick={() => { setTexto(''); setSp({}) }}>Limpiar filtros</button>
+              )}>
+              {Object.values(filtros).some(Boolean) ? 'Prueba con otros filtros o un rango de fechas más amplio.' : 'Aún no hay transacciones registradas.'}
+            </Vacio> : (
             <div className="tabla-scroll">
               <table className="tabla">
                 <thead>

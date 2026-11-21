@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import api, { mensajeError } from '../api/client'
-import { Aviso, Campo, Cargando, Encabezado, SelectEnum, Vacio } from '../components/UI'
+import { Aviso, Campo, Encabezado, SelectEnum, TablaCargando, Vacio } from '../components/UI'
 import useApi from '../hooks/useApi'
 import { ENUMS, descargarArchivo, etiqueta, fecha, fechaHora, hoyISO, moneda, numero } from '../utils/formato'
 
@@ -52,7 +52,7 @@ export default function Reportes() {
         <button className="btn btn-primario">Generar reporte</button>
       </form>
 
-      {cargando && !datos && <Cargando />}
+      {cargando && !datos && <TablaCargando columnas={5} />}
       {datos && (
         <section className="panel sin-padding">
           {datos.length === 0 ? <Vacio>Aún no hay reportes. El sistema genera uno diario a las 23:55.</Vacio> : (

@@ -10,6 +10,7 @@ import jakarta.validation.constraints.Pattern;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,9 +19,11 @@ import pe.bbva.backend.exception.ErrorCode;
 import pe.bbva.backend.model.seguridad.Usuario;
 import pe.bbva.backend.service.reporte.AuditoriaService;
 import pe.bbva.backend.service.seguridad.AuthService;
+import pe.bbva.backend.service.seguridad.FotoPerfilService;
 import pe.bbva.backend.service.seguridad.RecuperacionPasswordService;
 import pe.bbva.backend.validation.PasswordSegura;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -47,16 +50,23 @@ public class AuthController {
                                     String codigo) {
     }
 
+    /** foto = data URL de la imagen, o null/vacío para quitarla. */
+    public record FotoRequest(String foto) {
+    }
+
     public record ResetPasswordRequest(@NotBlank String resetToken, @PasswordSegura String nuevaPassword,
                                        @NotBlank String confirmarPassword) {
     }
 
     private final AuthService authService;
     private final RecuperacionPasswordService recuperacionService;
+    private final FotoPerfilService fotoPerfilService;
 
-    public AuthController(AuthService authService, RecuperacionPasswordService recuperacionService) {
+    public AuthController(AuthService authService, RecuperacionPasswordService recuperacionService,
+                          FotoPerfilService fotoPerfilService) {
         this.authService = authService;
         this.recuperacionService = recuperacionService;
+        this.fotoPerfilService = fotoPerfilService;
     }
 
     @PostMapping("/login")
@@ -81,6 +91,25 @@ public class AuthController {
     @Operation(summary = "Datos del usuario logueado")
     public Usuario me() {
         return authService.usuarioActual();
+    }
+
+    @GetMapping("/me/foto")
+    @Operation(summary = "Foto de perfil del usuario logueado (data URL o null)")
+    public Map<String, String> miFoto() {
+        return conFoto(fotoPerfilService.fotoActual());
+    }
+
+    @PutMapping("/me/foto")
+    @Operation(summary = "Subir o quitar (foto = null) la foto de perfil")
+    public Map<String, String> guardarFoto(@RequestBody FotoRequest req) {
+        return conFoto(fotoPerfilService.guardar(req.foto()));
+    }
+
+    /** Map.of no acepta null, por eso se usa HashMap. */
+    private static Map<String, String> conFoto(String foto) {
+        Map<String, String> r = new HashMap<>();
+        r.put("foto", foto);
+        return r;
     }
 
     @PostMapping("/cambiar-password")

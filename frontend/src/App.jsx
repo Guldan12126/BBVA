@@ -1,30 +1,34 @@
+import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { useAuth } from './auth/AuthContext'
 import Layout from './components/Layout'
+import { Cargando } from './components/UI'
 import { MENU } from './menu'
-import AlertaDetalle from './pages/AlertaDetalle'
-import Alertas from './pages/Alertas'
-import Atencion from './pages/Atencion'
-import Auditoria from './pages/Auditoria'
-import CasoDetalle from './pages/CasoDetalle'
-import Casos from './pages/Casos'
-import ClienteDetalle from './pages/ClienteDetalle'
-import Clientes from './pages/Clientes'
-import Comercios from './pages/Comercios'
-import Dashboard from './pages/Dashboard'
-import ListaNegra from './pages/ListaNegra'
 import Login from './pages/Login'
-import Modelo from './pages/Modelo'
 import NoEncontrado from './pages/NoEncontrado'
-import Perfil from './pages/Perfil'
-import RecuperarPassword from './pages/RecuperarPassword'
-import Reglas from './pages/Reglas'
-import Reportes from './pages/Reportes'
-import Simulador from './pages/Simulador'
-import TransaccionDetalle from './pages/TransaccionDetalle'
-import Transacciones from './pages/Transacciones'
-import Usuarios from './pages/Usuarios'
-import ValidarCompra from './pages/ValidarCompra'
+
+// Las demás páginas se cargan bajo demanda
+const AlertaDetalle = lazy(() => import('./pages/AlertaDetalle'))
+const Alertas = lazy(() => import('./pages/Alertas'))
+const Atencion = lazy(() => import('./pages/Atencion'))
+const Auditoria = lazy(() => import('./pages/Auditoria'))
+const CasoDetalle = lazy(() => import('./pages/CasoDetalle'))
+const Casos = lazy(() => import('./pages/Casos'))
+const ClienteDetalle = lazy(() => import('./pages/ClienteDetalle'))
+const Clientes = lazy(() => import('./pages/Clientes'))
+const Comercios = lazy(() => import('./pages/Comercios'))
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const ListaNegra = lazy(() => import('./pages/ListaNegra'))
+const Modelo = lazy(() => import('./pages/Modelo'))
+const Perfil = lazy(() => import('./pages/Perfil'))
+const RecuperarPassword = lazy(() => import('./pages/RecuperarPassword'))
+const Reglas = lazy(() => import('./pages/Reglas'))
+const Reportes = lazy(() => import('./pages/Reportes'))
+const Simulador = lazy(() => import('./pages/Simulador'))
+const TransaccionDetalle = lazy(() => import('./pages/TransaccionDetalle'))
+const Transacciones = lazy(() => import('./pages/Transacciones'))
+const Usuarios = lazy(() => import('./pages/Usuarios'))
+const ValidarCompra = lazy(() => import('./pages/ValidarCompra'))
 
 /** Si no hay sesión, manda al login (y recuerda a dónde quería ir el usuario). */
 function RequiereSesion({ children }) {
@@ -63,7 +67,9 @@ const PAGINAS = [
 
 export default function App() {
   const { usuario } = useAuth()
+  // Cada página se descarga solo cuando se abre por primera vez (carga inicial más rápida)
   return (
+    <Suspense fallback={<Cargando />}>
     <Routes>
       {/* Públicas */}
       <Route path="/login" element={usuario ? <Navigate to="/" replace /> : <Login />} />
@@ -104,5 +110,6 @@ export default function App() {
         <Route path="*" element={<NoEncontrado />} />
       </Route>
     </Routes>
+    </Suspense>
   )
 }

@@ -7,8 +7,60 @@ import api, { guardarSesion, leerSesion } from '../api/client'
  */
 const AuthContext = createContext(null)
 
+const claveFoto = (id) => `foto-perfil-${id}`
+
+function leerFotoLocal(id) {
+  if (!id) return null
+  try {
+    return localStorage.getItem(claveFoto(id))
+  } catch {
+    return null
+  }
+}
+
+function guardarFotoLocal(id, valor) {
+  if (!id) return
+  try {
+    if (valor) localStorage.setItem(claveFoto(id), valor)
+    else localStorage.removeItem(claveFoto(id))
+  } catch {
+    // Sin espacio o almacenamiento bloqueado: la foto igual queda en memoria
+  }
+}
+
 export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(() => leerSesion()?.usuario || null)
+  // Foto de perfil (data URL). Se guarda en localStorage para mostrarla al instante al recargar.
+  const [foto, setFotoEstado] = useState(() => leerFotoLocal(leerSesion()?.usuario?.id))
+
+  const setFoto = useCallback(
+    (valor) => {
+      setFotoEstado(valor)
+      guardarFotoLocal(usuario?.id, valor)
+    },
+    [usuario?.id],
+  )
+
+  // Al entrar (o recargar) se trae la foto del backend
+  useEffect(() => {
+    if (!usuario?.id) {
+      setFotoEstado(null)
+      return
+    }
+    let vigente = true
+    setFotoEstado(leerFotoLocal(usuario.id))
+    api
+      .get('/api/auth/me/foto')
+      .then(({ data }) => {
+        if (!vigente) return
+        setFotoEstado(data.foto || null)
+        guardarFotoLocal(usuario.id, data.foto || null)
+      })
+      .catch(() => {})
+    return () => {
+      vigente = false
+    }
+  }, [usuario?.id])
 
   const logout = useCallback(async () => {
     const sesion = leerSesion()
@@ -37,7 +89,7 @@ export function AuthProvider({ children }) {
   const tieneRol = useCallback((...roles) => !!usuario && roles.includes(usuario.rol), [usuario])
 
   return (
-    <AuthContext.Provider value={{ usuario, login, logout, tieneRol }}>
+    <AuthContext.Provider value={{ usuario, login, logout, tieneRol, foto, setFoto }}>
       {children}
     </AuthContext.Provider>
   )

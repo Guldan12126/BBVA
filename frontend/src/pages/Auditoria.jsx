@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-import { Aviso, Badge, Cargando, Encabezado, Paginacion, SelectEnum, Vacio } from '../components/UI'
+import { Aviso, Badge, Encabezado, Paginacion, SelectEnum, TablaCargando, Vacio } from '../components/UI'
 import useApi from '../hooks/useApi'
 import { PERMISOS } from '../menu'
 import { ENUMS, etiqueta, fechaHora } from '../utils/formato'
@@ -34,7 +34,7 @@ function Acciones() {
         <SelectEnum valores={ENUMS.tipoAccion} valor={accion} alCambiar={(v) => { setAccion(v); setPage(0) }} todos="Todas las acciones" aria-label="Acción" />
       </div>
       <Aviso>{error}</Aviso>
-      {cargando && !datos && <Cargando />}
+      {cargando && !datos && <TablaCargando columnas={5} />}
       {datos && (
         <section className="panel sin-padding">
           {datos.content.length === 0 ? <Vacio /> : (
@@ -77,7 +77,7 @@ function Accesos() {
         </form>
       </div>
       <Aviso>{error}</Aviso>
-      {cargando && !datos && <Cargando />}
+      {cargando && !datos && <TablaCargando columnas={5} />}
       {datos && (
         <section className="panel sin-padding">
           {datos.content.length === 0 ? <Vacio /> : (

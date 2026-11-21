@@ -30,4 +30,21 @@ public interface AlertaRepository extends JpaRepository<Alerta, Long>, JpaSpecif
 
     long countByNivelRiesgoAndEstadoIn(NivelRiesgo nivelRiesgo, Collection<EstadoAlerta> estados);
 
+
+    // ---------- Dashboards por rol ----------
+
+    long countByAsignadoAIdAndNivelRiesgoAndEstadoIn(Long usuarioId, NivelRiesgo nivelRiesgo, Collection<EstadoAlerta> estados);
+
+    long countByAsignadoAIsNullAndEstadoIn(Collection<EstadoAlerta> estados);
+
+    List<Alerta> findTop8ByAsignadoAIdAndEstadoInOrderByProbabilidadDesc(Long usuarioId, Collection<EstadoAlerta> estados);
+
+    List<Alerta> findTop8ByEstadoOrderByProbabilidadDesc(EstadoAlerta estado);
+
+    long countByDecididoPorIdAndFechaDecisionBetween(Long usuarioId, LocalDateTime desde, LocalDateTime hasta);
+
+    long countByDecididoPorIdAndEstadoAndFechaDecisionBetween(Long usuarioId, EstadoAlerta estado, LocalDateTime desde, LocalDateTime hasta);
+
+    List<Alerta> findByFechaDecisionBetween(LocalDateTime desde, LocalDateTime hasta);
+
 }

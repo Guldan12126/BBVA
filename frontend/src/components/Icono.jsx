@@ -25,6 +25,22 @@ const TRAZOS = {
   'flecha-izq': 'M19 12H5M11 6l-6 6 6 6',
   check: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM8 12l3 3 5-6',
   reloj: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2',
+  actividad: 'M3 12h4l3-8 4 16 3-8h4',
+  campana: 'M6 16V11a6 6 0 0 1 12 0v5l2 2H4l2-2zM10 20a2 2 0 0 0 4 0',
+  'escudo-alerta': 'M12 3l8 3v6c0 5-3.5 8.5-8 9.5C7.5 20.5 4 17 4 12V6l8-3zM12 8v4M12 15.5h.01',
+  'escudo-ok': 'M12 3l8 3v6c0 5-3.5 8.5-8 9.5C7.5 20.5 4 17 4 12V6l8-3zM9 12l2 2 4-4',
+  rayo: 'M13 2 4 14h7l-1 8 9-12h-7l1-8z',
+  tarjeta: 'M3 6h18v12H3zM3 10h18M7 15h3M16 4.5 8 19.5',
+  actualizar: 'M20 11a8 8 0 0 0-14.3-4.9L4 8M4 4v4h4M4 13a8 8 0 0 0 14.3 4.9L20 16M20 20v-4h-4',
+  calendario: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4',
+  chevron: 'M9 6l6 6-6 6',
+  camara: 'M4 8h3l2-3h6l2 3h3v11H4zM12 10.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z',
+  subir: 'M12 16V4M7 9l5-5 5 5M4 16v4h16v-4',
+  basura: 'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6',
+  buscar: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4',
+  documento: 'M3 5h18v14H3zM9 9.5a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM5.5 16.5a3.5 3.5 0 0 1 7 0M15 10h3M15 13h3',
+  bandeja: 'M3 13l3-8h12l3 8v6H3zM3 13h5l1 2h6l1-2h5',
+  circulo: 'M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16z',
 }
 
 export default function Icono({ nombre, size = 18 }) {
