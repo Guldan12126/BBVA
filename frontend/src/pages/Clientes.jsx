@@ -4,6 +4,7 @@ import api, { mensajeError } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import Icono from '../components/Icono'
 import { Aviso, Campo, Encabezado, InputPrefijo, Modal, Paginacion, PieModal, SeccionForm, TablaCargando, Vacio } from '../components/UI'
+import MapaDireccion from '../components/MapaDireccion'
 import useApi from '../hooks/useApi'
 import { PERMISOS } from '../menu'
 
@@ -72,6 +73,7 @@ export function FormCliente({ abierto, alCerrar, alGuardar, cliente }) {
   const [f, setF] = useState(cliente || VACIO)
   const [error, setError] = useState(null)
   const [enviando, setEnviando] = useState(false)
+  const [mapa, setMapa] = useState(false)
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value })
 
   const iniciales = `${f.nombres?.trim()?.[0] || ''}${f.apellidos?.trim()?.[0] || ''}`.toUpperCase()
@@ -149,8 +151,20 @@ export function FormCliente({ abierto, alCerrar, alGuardar, cliente }) {
             <input value={f.ciudad} onChange={set('ciudad')} placeholder="Piura" required />
           </Campo>
           <Campo etiqueta="Dirección" opcional>
-            <input value={f.direccion || ''} onChange={set('direccion')} placeholder="Av. Grau 123" />
+            <div className="input-mapa">
+              <input value={f.direccion || ''} onChange={set('direccion')} placeholder="Clic para elegir en el mapa"
+                onClick={() => setMapa(true)} />
+              <button type="button" onClick={() => setMapa(true)} title="Elegir en el mapa" aria-label="Elegir en el mapa">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z" /><circle cx="12" cy="9.5" r="2.5" />
+                </svg>
+              </button>
+            </div>
           </Campo>
+          {mapa && (
+            <MapaDireccion direccion={f.direccion} ciudad={f.ciudad}
+              alElegir={({ direccion, ciudad }) => setF((p) => ({ ...p, direccion, ciudad: ciudad || p.ciudad }))} alCerrar={() => setMapa(false)} />
+          )}
         </SeccionForm>
 
         <PieModal alCancelar={alCerrar} enviando={enviando} texto={cliente ? 'Guardar cambios' : 'Registrar cliente'} />
