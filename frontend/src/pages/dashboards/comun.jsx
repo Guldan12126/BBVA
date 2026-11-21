@@ -102,31 +102,63 @@ export function useDatosDashboard(urls) {
   }
 }
 
-/** Encabezado común: saludo, rol, estado en vivo y botón de actualizar. */
-export function CabeceraDashboard({ subtitulo, etiquetaRol, enVivo, actualizado, cargando, alActualizar, children }) {
+/**
+ * Encabezado de cada dashboard: saludo, fecha, estado en vivo y, a la derecha, lo más urgente del momento.
+ * foco: { to, icono, tono, titulo, texto, accion } cuando hay algo que atender; si es null se muestra focoOk.
+ */
+export function CabeceraDashboard({ subtitulo, etiquetaRol, enVivo, actualizado, cargando, alActualizar, foco, focoOk, children }) {
   const { usuario } = useAuth()
+  const hoy = new Date().toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
   return (
-    <div className="dash-cabecera">
-      <div>
-        <p className="dash-saludo">
-          {saludo()}, <span className="dash-rol">{etiquetaRol}</span>
-        </p>
-        <h1>{usuario.nombres}</h1>
-        <p className="muted">
-          {subtitulo}
-          {actualizado && <> · Actualizado a las {actualizado.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}</>}
-        </p>
+    <section className="dash-hero">
+      <div className="dash-hero-principal">
+        <div className="dash-hero-meta">
+          <span className="dash-hero-rol">{etiquetaRol}</span>
+          <span className="dash-hero-fecha"><Icono nombre="calendario" size={13} /> {hoy}</span>
+        </div>
+        <h1><span className="dash-hero-saludo">{saludo()},</span> {usuario.nombres}</h1>
+        <p className="dash-hero-sub">{subtitulo}</p>
+        <div className="dash-hero-acciones">
+          <span className={`dash-hero-vivo ${enVivo ? 'ok' : ''}`}>
+            <span className="punto" /> {enVivo ? 'En vivo' : 'Sin conexión en vivo'}
+          </span>
+          {actualizado && (
+            <span className="dash-hero-hora">
+              Actualizado {actualizado.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          )}
+          {children}
+          <button className="dash-hero-btn" onClick={alActualizar} disabled={cargando} title="Actualizar datos">
+            <span className={cargando ? 'girando' : ''}><Icono nombre="actualizar" size={15} /></span> Actualizar
+          </button>
+        </div>
       </div>
-      <div className="dash-acciones">
-        <span className={`chip-estado ${enVivo ? 'ok' : ''}`}>
-          <span className="punto" /> {enVivo ? 'En vivo' : 'Sin conexión en vivo'}
-        </span>
-        {children}
-        <button className="btn btn-sec" onClick={alActualizar} disabled={cargando}>
-          <span className={cargando ? 'girando' : ''}><Icono nombre="actualizar" size={16} /></span> Actualizar
-        </button>
-      </div>
-    </div>
+
+      {foco ? (
+        <Link to={foco.to} className={`dash-foco foco-${foco.tono || 'rojo'}`}>
+          <span className="dash-foco-etiqueta">Prioridad ahora</span>
+          <span className="dash-foco-cuerpo">
+            <span className="dash-foco-icono"><Icono nombre={foco.icono || 'escudo-alerta'} size={20} /></span>
+            <span className="dash-foco-texto">
+              <strong>{foco.titulo}</strong>
+              {foco.texto && <small>{foco.texto}</small>}
+            </span>
+          </span>
+          <span className="dash-foco-ir">{foco.accion || 'Revisar ahora'} <Icono nombre="flecha" size={15} /></span>
+        </Link>
+      ) : (
+        <div className="dash-foco foco-ok">
+          <span className="dash-foco-etiqueta">Prioridad ahora</span>
+          <span className="dash-foco-cuerpo">
+            <span className="dash-foco-icono"><Icono nombre="escudo-ok" size={20} /></span>
+            <span className="dash-foco-texto">
+              <strong>{focoOk?.titulo || 'Todo al día'}</strong>
+              <small>{focoOk?.texto || 'No hay nada urgente pendiente.'}</small>
+            </span>
+          </span>
+        </div>
+      )}
+    </section>
   )
 }
 

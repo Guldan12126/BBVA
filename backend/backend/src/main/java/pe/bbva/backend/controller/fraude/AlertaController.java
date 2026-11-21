@@ -48,7 +48,11 @@ public class AlertaController {
                                   Boolean bloquearTarjeta) {
     }
 
-    public record EscalarRequest(@NotBlank @Size(max = 500) String motivo) {
+    /**
+     * destino: SUPERVISOR (por defecto, la alerta queda ESCALADA) o ANALISTA (se transfiere a un analista;
+     * si no se indica usuarioId vuelve a la cola sin asignar).
+     */
+    public record EscalarRequest(@NotBlank @Size(max = 500) String motivo, String destino, Long usuarioId) {
     }
 
     public record ComentarioRequest(@NotBlank @Size(max = 1000) String texto) {
@@ -72,22 +76,25 @@ public class AlertaController {
                                @RequestParam(required = false) NivelRiesgo nivel,
                                @RequestParam(required = false) Long asignadoId,
                                @RequestParam(required = false) Boolean activas,
+                               @RequestParam(required = false) String q,
                                @PageableDefault(size = 20) Pageable pageable) {
-        return alertaService.buscar(estado, nivel, asignadoId, activas, pageable);
+        return alertaService.buscar(estado, nivel, asignadoId, activas, q, pageable);
     }
 
     @GetMapping("/cola")
     @Operation(summary = "Cola de alertas activas ordenada por probabilidad de fraude")
     public Page<Alerta> cola(@RequestParam(required = false) NivelRiesgo nivel,
+                             @RequestParam(required = false) String q,
                              @PageableDefault(size = 20) Pageable pageable) {
-        return alertaService.cola(nivel, pageable);
+        return alertaService.cola(nivel, q, pageable);
     }
 
     @GetMapping("/mias")
     @Operation(summary = "Alertas asignadas al usuario logueado")
     public Page<Alerta> mias(@RequestParam(defaultValue = "true") Boolean activas,
+                             @RequestParam(required = false) String q,
                              @PageableDefault(size = 20) Pageable pageable) {
-        return alertaService.mias(activas, pageable);
+        return alertaService.mias(activas, q, pageable);
     }
 
     @GetMapping("/resumen")
@@ -124,7 +131,7 @@ public class AlertaController {
 
     @PatchMapping("/{id}/escalar")
     public Alerta escalar(@PathVariable Long id, @Valid @RequestBody EscalarRequest req) {
-        return alertaService.escalar(id, req.motivo());
+        return alertaService.escalar(id, req.motivo(), req.destino(), req.usuarioId());
     }
 
     @GetMapping("/{id}/comentarios")

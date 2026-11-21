@@ -20,6 +20,7 @@ import pe.bbva.backend.model.enums.NivelRiesgo;
 import pe.bbva.backend.service.cliente.ComercioService;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/comercios")
@@ -52,6 +53,11 @@ public class ComercioController {
     @GetMapping
     public List<Comercio> listar(@RequestParam(required = false) CategoriaComercio categoria) {
         return comercioService.listar(categoria);
+    }
+
+    @GetMapping("/estadisticas")
+    public Map<Long, Map<String, Object>> estadisticas() {
+        return comercioService.estadisticas();
     }
 
     @GetMapping("/{id}")

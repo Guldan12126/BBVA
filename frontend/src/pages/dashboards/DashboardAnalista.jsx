@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { Aviso, Cargando, Kpi, Vacio } from '../../components/UI'
 import { numero } from '../../utils/formato'
 import {
-  AccesosRapidos, Banner, BarrasDia, CabeceraDashboard, COLOR, ListaAlertas, minutosATexto, Progreso, ResumenLeyenda,
+  AccesosRapidos, BarrasDia, CabeceraDashboard, COLOR, ListaAlertas, minutosATexto, Progreso, ResumenLeyenda,
   TituloPanel, useDatosDashboard,
 } from './comun'
 
@@ -22,13 +22,21 @@ export default function DashboardAnalista() {
   return (
     <>
       <CabeceraDashboard etiquetaRol="Analista de Fraude" subtitulo="Tu cola de trabajo y tu avance de hoy"
-        enVivo={enVivo} actualizado={actualizado} cargando={cargando} alActualizar={recargar} />
-
-      {r.misCriticas > 0 && (
-        <Banner to="/alertas?vista=mias&nivel=CRITICO"
-          titulo={`Tienes ${r.misCriticas} ${r.misCriticas === 1 ? 'alerta crítica asignada' : 'alertas críticas asignadas'}`}
-          texto="Atiéndelas primero: tienen la mayor probabilidad de fraude" />
-      )}
+        enVivo={enVivo} actualizado={actualizado} cargando={cargando} alActualizar={recargar}
+        foco={r.misCriticas > 0 ? {
+          to: '/alertas?vista=mias&nivel=CRITICO', accion: 'Atender',
+          titulo: `${r.misCriticas} ${r.misCriticas === 1 ? 'alerta crítica asignada' : 'alertas críticas asignadas'}`,
+          texto: 'Tienen la mayor probabilidad de fraude',
+        } : r.misPendientes > 0 ? {
+          to: '/alertas?vista=mias', icono: 'campana', tono: 'naranja', accion: 'Ver mi cola',
+          titulo: `${r.misPendientes} ${r.misPendientes === 1 ? 'alerta pendiente' : 'alertas pendientes'} en tu cola`,
+          texto: 'Empieza por la de mayor probabilidad',
+        } : r.sinAsignar > 0 ? {
+          to: '/alertas', icono: 'bandeja', tono: 'azul', accion: 'Tomar alertas',
+          titulo: `${r.sinAsignar} ${r.sinAsignar === 1 ? 'alerta sin asignar' : 'alertas sin asignar'}`,
+          texto: 'Tu cola está vacía: toma una de la cola general',
+        } : null}
+        focoOk={{ titulo: 'Cola al día', texto: 'No tienes alertas pendientes ni hay alertas sin asignar.' }} />
 
       <div className="kpis dash-kpis">
         <Kpi icono="campana" titulo="Mis alertas pendientes" valor={numero(r.misPendientes)} tono="naranja"

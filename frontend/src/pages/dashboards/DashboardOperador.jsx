@@ -3,7 +3,7 @@ import Icono from '../../components/Icono'
 import { Aviso, Badge, Cargando, Kpi, Vacio } from '../../components/UI'
 import { moneda, numero } from '../../utils/formato'
 import {
-  AccesosRapidos, Banner, BarrasDia, CabeceraDashboard, COLOR, haceCuanto, iniciales, pct, Sparkline, TituloPanel,
+  AccesosRapidos, BarrasDia, CabeceraDashboard, COLOR, haceCuanto, iniciales, pct, Sparkline, TituloPanel,
   useDatosDashboard, VacioOk,
 } from './comun'
 
@@ -26,13 +26,17 @@ export default function DashboardOperador() {
   return (
     <>
       <CabeceraDashboard etiquetaRol="Operador de Atención" subtitulo="Clientes por contactar y tus llamadas de hoy"
-        enVivo={enVivo} actualizado={actualizado} cargando={cargando} alActualizar={recargar} />
-
-      {r.noReconocidas > 0 && (
-        <Banner to="/atencion" icono="telefono"
-          titulo={`${r.noReconocidas} ${r.noReconocidas === 1 ? 'cliente no reconoce' : 'clientes no reconocen'} una compra`}
-          texto="Llámalos primero para confirmar el fraude y, si lo piden, bloquear su tarjeta" accion="Ir a llamar" />
-      )}
+        enVivo={enVivo} actualizado={actualizado} cargando={cargando} alActualizar={recargar}
+        foco={r.noReconocidas > 0 ? {
+          to: '/atencion', icono: 'telefono', accion: 'Ir a llamar',
+          titulo: `${r.noReconocidas} ${r.noReconocidas === 1 ? 'cliente no reconoce' : 'clientes no reconocen'} una compra`,
+          texto: 'Llámalos primero y, si lo piden, bloquea su tarjeta',
+        } : r.porLlamar > 0 ? {
+          to: '/atencion', icono: 'reloj', tono: 'naranja', accion: 'Ir a llamar',
+          titulo: `${r.porLlamar} ${r.porLlamar === 1 ? 'cliente no respondió' : 'clientes no respondieron'} el aviso`,
+          texto: 'Contáctalos para confirmar si reconocen la compra',
+        } : null}
+        focoOk={{ titulo: 'Sin llamadas pendientes', texto: 'Ningún cliente está esperando tu llamada.' }} />
 
       <div className="kpis dash-kpis">
         <Kpi icono="telefono" titulo="Clientes por llamar" valor={numero(r.porLlamar)} tono="rojo"

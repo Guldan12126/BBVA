@@ -47,7 +47,18 @@ export default function DashboardAdmin() {
   return (
     <>
       <CabeceraDashboard etiquetaRol="Administrador" subtitulo="Estado del sistema, configuración y volumen transaccional"
-        enVivo={enVivo} actualizado={actualizado} cargando={cargando} alActualizar={recargar} />
+        enVivo={enVivo} actualizado={actualizado} cargando={cargando} alActualizar={recargar}
+        foco={!iaOk ? {
+          to: '/modelo', icono: 'ia', tono: 'naranja', accion: 'Revisar modelo',
+          titulo: 'El modelo de IA está fuera de línea', texto: 'Las transacciones se evalúan solo con las reglas de respaldo',
+        } : r.accesosFallidos24h >= 10 ? {
+          to: '/auditoria', icono: 'candado', accion: 'Ver accesos',
+          titulo: `${numero(r.accesosFallidos24h)} inicios de sesión fallidos en 24 h`, texto: 'Revisa si hay intentos de acceso no autorizado',
+        } : r.reglasActivas === 0 ? {
+          to: '/reglas', icono: 'regla', tono: 'naranja', accion: 'Activar reglas',
+          titulo: 'No hay reglas de fraude activas', texto: 'El motor de reglas no está evaluando las transacciones',
+        } : null}
+        focoOk={{ titulo: 'Sistema operando con normalidad', texto: 'Modelo de IA en línea, reglas activas y sin accesos sospechosos.' }} />
 
       {/* ---------- Estado del sistema ---------- */}
       <div className="estado-sistema">

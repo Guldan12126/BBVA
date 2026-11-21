@@ -42,9 +42,24 @@ public class CasoService {
     }
 
     @Transactional(readOnly = true)
-    public List<Caso> listar(EstadoCaso estado) {
-        return estado == null ? casoRepository.findAllByOrderByFechaCreacionDesc()
+    public List<Caso> listar(EstadoCaso estado, Long clienteId, String q) {
+        List<Caso> lista = estado == null ? casoRepository.findAllByOrderByFechaCreacionDesc()
                 : casoRepository.findByEstadoOrderByFechaCreacionDesc(estado);
+        String texto = q == null ? "" : q.trim().toLowerCase();
+        return lista.stream()
+                .filter(c -> clienteId == null || (c.getCliente() != null && clienteId.equals(c.getCliente().getId())))
+                .filter(c -> texto.isEmpty() || coincide(c, texto))
+                .toList();
+    }
+
+    /** Busca el texto en el código, el título y el nombre o DNI del cliente. */
+    private static boolean coincide(Caso c, String texto) {
+        StringBuilder sb = new StringBuilder().append(c.getCodigo()).append(' ').append(c.getTitulo());
+        if (c.getCliente() != null) {
+            sb.append(' ').append(c.getCliente().getNombres()).append(' ').append(c.getCliente().getApellidos())
+                    .append(' ').append(c.getCliente().getDni());
+        }
+        return sb.toString().toLowerCase().contains(texto);
     }
 
     @Transactional(readOnly = true)

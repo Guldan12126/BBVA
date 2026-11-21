@@ -6,17 +6,49 @@ import pe.bbva.backend.exception.ResourceNotFoundException;
 import pe.bbva.backend.model.cliente.Comercio;
 import pe.bbva.backend.model.enums.CategoriaComercio;
 import pe.bbva.backend.repository.cliente.ComercioRepository;
+import pe.bbva.backend.repository.fraude.AlertaRepository;
+import pe.bbva.backend.repository.transaccion.TransaccionRepository;
 import pe.bbva.backend.util.GeoUtils;
 
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ComercioService {
 
     private final ComercioRepository comercioRepository;
+    private final TransaccionRepository transaccionRepository;
+    private final AlertaRepository alertaRepository;
 
-    public ComercioService(ComercioRepository comercioRepository) {
+    public ComercioService(ComercioRepository comercioRepository, TransaccionRepository transaccionRepository,
+                           AlertaRepository alertaRepository) {
         this.comercioRepository = comercioRepository;
+        this.transaccionRepository = transaccionRepository;
+        this.alertaRepository = alertaRepository;
+    }
+
+    /** Actividad de cada comercio (clave: id del comercio): transacciones, monto, fraudes, alertas, última compra. */
+    @Transactional(readOnly = true)
+    public Map<Long, Map<String, Object>> estadisticas() {
+        Map<Long, Long> alertas = new HashMap<>();
+        for (Object[] f : alertaRepository.alertasPorComercio()) {
+            alertas.put((Long) f[0], ((Number) f[1]).longValue());
+        }
+        Map<Long, Map<String, Object>> r = new HashMap<>();
+        for (Object[] f : transaccionRepository.estadisticasPorComercio()) {
+            Long id = (Long) f[0];
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("transacciones", ((Number) f[1]).longValue());
+            m.put("monto", f[2]);
+            m.put("ultimaCompra", f[3]);
+            m.put("fraudulentas", f[4] == null ? 0 : ((Number) f[4]).longValue());
+            m.put("sospechosas", f[5] == null ? 0 : ((Number) f[5]).longValue());
+            m.put("alertas", alertas.getOrDefault(id, 0L));
+            r.put(id, m);
+        }
+        return r;
     }
 
     @Transactional(readOnly = true)

@@ -77,7 +77,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                         // ---------- Lista corta de analistas/operadores para asignar alertas ----------
-                        .requestMatchers(HttpMethod.GET, "/api/usuarios/asignables").hasAnyRole(ADMIN, SUPERVISOR, ANALISTA)
+                        .requestMatchers(HttpMethod.GET, "/api/usuarios/asignables").hasAnyRole(ADMIN, SUPERVISOR, ANALISTA, OPERADOR)
 
                         // ---------- Solo Administrador ----------
                         .requestMatchers("/api/usuarios/**", "/api/simulador/**", "/api/auditoria/accesos/**").hasRole(ADMIN)
@@ -101,12 +101,15 @@ public class SecurityConfig {
 
                         // ---------- Alertas ----------
                         .requestMatchers(HttpMethod.PATCH, "/api/alertas/*/decision").hasAnyRole(ANALISTA, SUPERVISOR)
-                        .requestMatchers(HttpMethod.PATCH, "/api/alertas/*/escalar").hasAnyRole(ANALISTA, SUPERVISOR)
+                        // El Operador también escala: si en la llamada el cliente reporta algo complejo (clonación, robo de identidad...)
+                        .requestMatchers(HttpMethod.PATCH, "/api/alertas/*/escalar").hasAnyRole(ANALISTA, SUPERVISOR, OPERADOR)
                         .requestMatchers(HttpMethod.PATCH, "/api/alertas/*/asignar").hasAnyRole(ADMIN, SUPERVISOR, ANALISTA)
                         .requestMatchers(HttpMethod.PATCH, "/api/alertas/*/tomar").hasAnyRole(ANALISTA, OPERADOR)
                         .requestMatchers(HttpMethod.POST, "/api/alertas/*/comentarios").hasAnyRole(ANALISTA, SUPERVISOR, OPERADOR)
 
                         // ---------- Casos ----------
+                        // El Operador solo consulta (el cliente llama preguntando por su investigación)
+                        .requestMatchers(HttpMethod.GET, "/api/casos/**").hasAnyRole(ANALISTA, SUPERVISOR, OPERADOR)
                         .requestMatchers("/api/casos/**").hasAnyRole(ANALISTA, SUPERVISOR)
 
                         // ---------- Atención al cliente ----------

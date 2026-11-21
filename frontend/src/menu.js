@@ -10,7 +10,7 @@ export const MENU = [
   { ruta: '/', texto: 'Dashboard', icono: 'dashboard', roles: TODOS },
   { ruta: '/alertas', texto: 'Alertas', icono: 'alerta', roles: TODOS },
   { ruta: '/transacciones', texto: 'Transacciones', icono: 'transaccion', roles: TODOS },
-  { ruta: '/casos', texto: 'Casos', icono: 'caso', roles: ['ANALISTA', 'SUPERVISOR'] },
+  { ruta: '/casos', texto: 'Casos', icono: 'caso', roles: ['ANALISTA', 'SUPERVISOR', 'OPERADOR'] },
   { ruta: '/atencion', texto: 'Atención al cliente', icono: 'telefono', roles: ['OPERADOR', 'ANALISTA'] },
 
   { grupo: 'Catálogos' },
@@ -33,7 +33,7 @@ export const MENU = [
 export const PERMISOS = {
   decidirAlerta: ['ANALISTA'],
   decidirAlertaEscalada: ['ANALISTA', 'SUPERVISOR'],
-  escalarAlerta: ['ANALISTA', 'SUPERVISOR'],
+  escalarAlerta: ['ANALISTA', 'SUPERVISOR', 'OPERADOR'],
   asignarAlerta: ['ADMIN', 'SUPERVISOR', 'ANALISTA'],
   tomarAlerta: ['ANALISTA', 'OPERADOR'],
   comentarAlerta: ['ANALISTA', 'SUPERVISOR', 'OPERADOR'],
@@ -47,4 +47,7 @@ export const PERMISOS = {
   editarModelo: ['ADMIN'],
   verAccesos: ['ADMIN'],
   crearCaso: ['ANALISTA', 'SUPERVISOR'],
+  // El Operador ve los casos en modo lectura; solo Analista y Supervisor los modifican
+  gestionarCaso: ['ANALISTA', 'SUPERVISOR'],
+  verCasos: ['ANALISTA', 'SUPERVISOR', 'OPERADOR'],
 }

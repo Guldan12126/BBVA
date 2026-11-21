@@ -152,7 +152,8 @@ public class TransaccionService {
                 String t = texto.trim().toUpperCase();
                 p.add(cb.or(
                         cb.like(cb.upper(root.get("codigo")), "%" + t + "%"),
-                        cb.like(tarjeta.get("ultimosDigitos"), "%" + t + "%")));
+                        cb.like(tarjeta.get("ultimosDigitos"), "%" + t + "%"),
+                        cb.like(cb.upper(root.get("comercio").get("nombre")), "%" + t + "%")));
             }
             if (nivel != null) {
                 p.add(cb.equal(root.get("nivelRiesgo"), nivel));

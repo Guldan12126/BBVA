@@ -46,8 +46,10 @@ public class CasoController {
     }
 
     @GetMapping
-    public List<Caso> listar(@RequestParam(required = false) EstadoCaso estado) {
-        return casoService.listar(estado);
+    public List<Caso> listar(@RequestParam(required = false) EstadoCaso estado,
+                             @RequestParam(required = false) Long clienteId,
+                             @RequestParam(required = false) String q) {
+        return casoService.listar(estado, clienteId, q);
     }
 
     @GetMapping("/{id}")

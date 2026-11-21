@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { Aviso, Cargando, Kpi, Vacio } from '../../components/UI'
 import { numero } from '../../utils/formato'
 import {
-  aLista, AccesosRapidos, Banner, BarrasDia, CabeceraDashboard, COLOR, COLOR_NIVEL, GraficoActividad, iniciales,
+  aLista, AccesosRapidos, BarrasDia, CabeceraDashboard, COLOR, COLOR_NIVEL, GraficoActividad, iniciales,
   ListaAlertas, minutosATexto, pct, Progreso, ResumenLeyenda, suma, TituloPanel, useDatosDashboard, VacioOk,
 } from './comun'
 
@@ -27,13 +27,17 @@ export default function DashboardSupervisor() {
   return (
     <>
       <CabeceraDashboard etiquetaRol="Supervisor de Agencia" subtitulo="Escaladas, rendimiento del equipo y situación del fraude"
-        enVivo={enVivo} actualizado={actualizado} cargando={cargando} alActualizar={recargar} />
-
-      {r.escaladas > 0 && (
-        <Banner to="/alertas?vista=todas&estado=ESCALADA" icono="flecha" tono="naranja"
-          titulo={`${r.escaladas} ${r.escaladas === 1 ? 'alerta escalada espera' : 'alertas escaladas esperan'} tu decisión`}
-          texto="Los analistas te pidieron revisar estos casos" accion="Decidir" />
-      )}
+        enVivo={enVivo} actualizado={actualizado} cargando={cargando} alActualizar={recargar}
+        foco={r.escaladas > 0 ? {
+          to: '/alertas?vista=escaladas', icono: 'flecha', tono: 'naranja', accion: 'Decidir',
+          titulo: `${r.escaladas} ${r.escaladas === 1 ? 'alerta escalada espera' : 'alertas escaladas esperan'} tu decisión`,
+          texto: 'El equipo te pidió revisar estos casos',
+        } : r.criticasActivas > 0 ? {
+          to: '/alertas?nivel=CRITICO', accion: 'Ver críticas',
+          titulo: `${r.criticasActivas} ${r.criticasActivas === 1 ? 'alerta crítica activa' : 'alertas críticas activas'}`,
+          texto: r.sinAsignar ? `${r.sinAsignar} alertas siguen sin asignar` : 'Verifica que el equipo las esté atendiendo',
+        } : null}
+        focoOk={{ titulo: 'Sin escaladas', texto: 'Nadie está esperando tu decisión.' }} />
 
       <div className="kpis dash-kpis">
         <Kpi icono="flecha" titulo="Escaladas a ti" valor={numero(r.escaladas)} tono="naranja" detalle="Requieren tu decisión" />

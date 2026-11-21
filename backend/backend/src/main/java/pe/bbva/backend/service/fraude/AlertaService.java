@@ -19,6 +19,7 @@ import pe.bbva.backend.model.enums.Clasificacion;
 import pe.bbva.backend.model.enums.EstadoAlerta;
 import pe.bbva.backend.model.enums.EstadoTarjeta;
 import pe.bbva.backend.model.enums.EstadoTransaccion;
+import pe.bbva.backend.model.enums.EstadoUsuario;
 import pe.bbva.backend.model.enums.NivelRiesgo;
 import pe.bbva.backend.model.enums.Prioridad;
 import pe.bbva.backend.model.enums.Rol;
@@ -105,6 +106,13 @@ public class AlertaService {
     @Transactional(readOnly = true)
     public Page<Alerta> buscar(EstadoAlerta estado, NivelRiesgo nivel, Long asignadoId, Boolean soloActivas,
                                Pageable pageable) {
+        return buscar(estado, nivel, asignadoId, soloActivas, null, pageable);
+    }
+
+    /** q: busca por código de alerta, nombre/apellido o DNI del cliente. */
+    @Transactional(readOnly = true)
+    public Page<Alerta> buscar(EstadoAlerta estado, NivelRiesgo nivel, Long asignadoId, Boolean soloActivas,
+                               String q, Pageable pageable) {
         Specification<Alerta> spec = (root, query, cb) -> {
             List<Predicate> p = new ArrayList<>();
             if (estado != null) {
@@ -118,6 +126,16 @@ public class AlertaService {
             if (asignadoId != null) {
                 p.add(cb.equal(root.get("asignadoA").get("id"), asignadoId));
             }
+            if (q != null && !q.isBlank()) {
+                String like = "%" + q.trim().toLowerCase() + "%";
+                var cliente = root.join("transaccion").join("tarjeta").join("cliente");
+                p.add(cb.or(
+                        cb.like(cb.lower(root.get("codigo")), like),
+                        cb.like(cb.lower(cliente.get("nombres")), like),
+                        cb.like(cb.lower(cliente.get("apellidos")), like),
+                        cb.like(cb.lower(cb.concat(cb.concat(cliente.get("nombres"), " "), cliente.get("apellidos"))), like),
+                        cb.like(cliente.get("dni"), like)));
+            }
             return cb.and(p.toArray(Predicate[]::new));
         };
         Pageable orden = pageable.getSort().isSorted() ? pageable
@@ -128,15 +146,15 @@ public class AlertaService {
 
     /** Cola de trabajo: alertas activas ordenadas de mayor a menor probabilidad de fraude. */
     @Transactional(readOnly = true)
-    public Page<Alerta> cola(NivelRiesgo nivel, Pageable pageable) {
-        return buscar(null, nivel, null, true, pageable);
+    public Page<Alerta> cola(NivelRiesgo nivel, String q, Pageable pageable) {
+        return buscar(null, nivel, null, true, q, pageable);
     }
 
     /** Alertas asignadas al usuario logueado (Analista u Operador). */
     @Transactional(readOnly = true)
-    public Page<Alerta> mias(Boolean soloActivas, Pageable pageable) {
+    public Page<Alerta> mias(Boolean soloActivas, String q, Pageable pageable) {
         Usuario actual = securityUtils.usuarioActual();
-        return buscar(null, null, actual.getId(), soloActivas, pageable);
+        return buscar(null, null, actual.getId(), soloActivas, q, pageable);
     }
 
     /** Resumen para la vista administrativa: alertas activas por nivel. */
@@ -182,7 +200,10 @@ public class AlertaService {
         Alerta a = obtenerActiva(alertaId);
         Usuario actual = securityUtils.usuarioActual();
         a.setAsignadoA(actual);
-        a.setEstado(EstadoAlerta.EN_REVISION);
+        // Si estaba escalada sigue en la bandeja del supervisor: tomarla no le quita ese estado
+        if (a.getEstado() != EstadoAlerta.ESCALADA) {
+            a.setEstado(EstadoAlerta.EN_REVISION);
+        }
         alertaRepository.save(a);
         auditoriaService.registrar(actual, a, TipoAccion.ASIGNAR_ALERTA, "Alerta tomada para revisión");
         return a;
@@ -235,13 +256,48 @@ public class AlertaService {
         return a;
     }
 
+    /**
+     * Escala o transfiere una alerta.
+     * destino SUPERVISOR (por defecto): queda ESCALADA para que la decida el Supervisor de Agencia.
+     * destino ANALISTA: se transfiere al analista indicado, o vuelve a la cola sin asignar si usuarioId es null.
+     * En ambos casos pasa a prioridad URGENTE y el motivo queda en el historial y en los comentarios.
+     */
     @Transactional
-    public Alerta escalar(Long alertaId, String motivo) {
+    public Alerta escalar(Long alertaId, String motivo, String destino, Long usuarioId) {
         Alerta a = obtenerActiva(alertaId);
-        a.setEstado(EstadoAlerta.ESCALADA);
+        if (a.getEstado() == EstadoAlerta.ESCALADA) {
+            throw new BusinessException("La alerta ya está escalada al supervisor");
+        }
+        Usuario actual = securityUtils.usuarioActual();
+        String detalle;
+        if ("ANALISTA".equalsIgnoreCase(destino)) {
+            if (usuarioId != null) {
+                Usuario analista = usuarioService.obtener(usuarioId);
+                if (analista.getRol() != Rol.ANALISTA || analista.getEstado() != EstadoUsuario.ACTIVO) {
+                    throw new BusinessException("Solo se puede transferir a un Analista de Fraude activo");
+                }
+                a.setAsignadoA(analista);
+                a.setEstado(EstadoAlerta.ASIGNADA);
+                detalle = "Transferida al analista " + analista.getNombreCompleto();
+            } else {
+                a.setAsignadoA(null);
+                a.setEstado(EstadoAlerta.PENDIENTE);
+                detalle = "Devuelta a la cola de analistas";
+            }
+        } else {
+            a.setEstado(EstadoAlerta.ESCALADA);
+            detalle = "Escalada al supervisor";
+        }
         a.setPrioridad(Prioridad.URGENTE);
         alertaRepository.save(a);
-        auditoriaService.registrar(TipoAccion.ESCALAR_ALERTA, a, motivo);
+        auditoriaService.registrar(actual, a, TipoAccion.ESCALAR_ALERTA, detalle + ": " + motivo);
+
+        // El motivo también queda en el hilo de comentarios para que lo lea quien la recibe
+        ComentarioAlerta c = new ComentarioAlerta();
+        c.setAlerta(a);
+        c.setUsuario(actual);
+        c.setTexto("[" + detalle + "] " + motivo);
+        comentarioRepository.save(c);
         return a;
     }
 

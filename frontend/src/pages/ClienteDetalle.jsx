@@ -66,6 +66,8 @@ export default function ClienteDetalle() {
   const perfil = useApi(`/api/clientes/${id}/perfil`)
   const notificaciones = useApi(`/api/clientes/${id}/notificaciones`)
   const transacciones = useApi('/api/transacciones', { clienteId: id, size: 10 })
+  const verCasos = tieneRol(...PERMISOS.verCasos)
+  const casos = useApi(verCasos ? '/api/casos' : null, { clienteId: id })
   const [editando, setEditando] = useState(false)
   const [nuevaTarjeta, setNuevaTarjeta] = useState(false)
   const [bloqueo, setBloqueo] = useState(null) // { tarjeta, accion: 'bloquear' | 'desbloquear' }
@@ -239,6 +241,36 @@ export default function ClienteDetalle() {
           </div>
         ) : <Vacio icono="transaccion">Este cliente aún no tiene transacciones.</Vacio>}
       </section>
+
+      {/* ---------- Casos de investigación ---------- */}
+      {verCasos && (
+        <section className="panel">
+          <div className="panel-titulo">
+            <div>
+              <h2>Casos de investigación</h2>
+              <p className="panel-sub">Investigaciones de fraude abiertas o cerradas sobre este cliente</p>
+            </div>
+            {casos.datos?.length > 0 && <span className="perfil-contador">{casos.datos.length}</span>}
+          </div>
+          {casos.datos?.length ? (
+            <ul className="lista-casos">
+              {casos.datos.map((k) => (
+                <li key={k.id}>
+                  <Link to={`/casos/${k.id}`} className="lista-casos-fila">
+                    <span className="acceso-icono"><Icono nombre="caso" size={16} /></span>
+                    <span className="lista-casos-datos">
+                      <strong>{k.titulo}</strong>
+                      <small className="muted"><span className="mono">{k.codigo}</span> · abierto {fechaHora(k.fechaCreacion)}{k.fechaCierre ? ` · cerrado ${fechaHora(k.fechaCierre)}` : ''}</small>
+                    </span>
+                    <Badge valor={k.prioridad} />
+                    <Badge valor={k.estado} />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : casos.cargando ? null : <Vacio icono="caso">Este cliente no tiene casos de investigación.</Vacio>}
+        </section>
+      )}
 
       {/* ---------- Avisos ---------- */}
       <section className="panel">

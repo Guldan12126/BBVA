@@ -45,4 +45,11 @@ public interface TransaccionRepository extends JpaRepository<Transaccion, Long>,
                                           @Param("desde") LocalDateTime desde,
                                           @Param("hasta") LocalDateTime hasta);
 
+    /** Por comercio: [comercioId, transacciones, monto total, última compra, fraudulentas, sospechosas]. */
+    @Query("select t.comercio.id, count(t), coalesce(sum(t.monto), 0), max(t.fechaHora), "
+            + "sum(case when t.clasificacion = pe.bbva.backend.model.enums.Clasificacion.FRAUDULENTA then 1 else 0 end), "
+            + "sum(case when t.clasificacion = pe.bbva.backend.model.enums.Clasificacion.SOSPECHOSA then 1 else 0 end) "
+            + "from Transaccion t group by t.comercio.id")
+    List<Object[]> estadisticasPorComercio();
+
 }

@@ -1,31 +1,71 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import api, { mensajeError } from '../api/client'
+import { useAuth } from '../auth/AuthContext'
 import Icono from '../components/Icono'
 import { Aviso, Badge, Campo, Encabezado, Modal, Opciones, PieModal, SeccionForm, SelectEnum, TablaCargando, Vacio } from '../components/UI'
 import useApi from '../hooks/useApi'
+import { PERMISOS } from '../menu'
 import { ENUMS, fechaHora, moneda } from '../utils/formato'
 
 /** Casos de investigación: agrupan varias alertas relacionadas (por ejemplo, del mismo cliente). */
 export default function Casos() {
   const navigate = useNavigate()
-  const [estado, setEstado] = useState('')
+  const { tieneRol } = useAuth()
+  const puedeGestionar = tieneRol(...PERMISOS.gestionarCaso)
+  // Filtros en la URL: /casos?q=12345678 sirve para abrir directamente los casos de un cliente
+  const [sp, setSp] = useSearchParams()
+  const estado = sp.get('estado') || ''
+  const q = sp.get('q') || ''
+  const [texto, setTexto] = useState(q)
   const [creando, setCreando] = useState(false)
-  const { datos, cargando, error } = useApi('/api/casos', { estado })
+  const { datos, cargando, error } = useApi('/api/casos', { estado, q })
+
+  useEffect(() => setTexto(q), [q])
+  // Busca al dejar de escribir (no en cada tecla)
+  useEffect(() => {
+    if (texto === q) return undefined
+    const t = setTimeout(() => cambiar({ q: texto }), 350)
+    return () => clearTimeout(t)
+  }, [texto]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  function cambiar(cambios) {
+    const nuevo = new URLSearchParams(sp)
+    Object.entries(cambios).forEach(([k, v]) => (v ? nuevo.set(k, v) : nuevo.delete(k)))
+    setSp(nuevo, { replace: true })
+  }
 
   return (
     <>
-      <Encabezado titulo="Casos de investigación" descripcion="Agrupa alertas relacionadas para investigarlas juntas">
-        <button className="btn btn-primario" onClick={() => setCreando(true)}>+ Nuevo caso</button>
+      <Encabezado titulo="Casos de investigación"
+        descripcion={puedeGestionar ? 'Agrupa alertas relacionadas para investigarlas juntas' : 'Consulta el estado de las investigaciones cuando un cliente pregunte por ellas'}>
+        {puedeGestionar && <button className="btn btn-primario" onClick={() => setCreando(true)}>+ Nuevo caso</button>}
       </Encabezado>
+      {!puedeGestionar && (
+        <div className="nota nota-info nota-pagina">
+          <Icono nombre="ojo" size={16} />
+          <span><strong>Modo consulta.</strong> Puedes ver los casos y sus alertas para informar al cliente; solo el equipo de fraude los modifica.</span>
+        </div>
+      )}
       <div className="filtros">
-        <SelectEnum valores={ENUMS.estadoCaso} valor={estado} alCambiar={setEstado} todos="Todos los estados" aria-label="Estado" />
+        <span className="input-prefijo filtro-buscar">
+          <span className="input-prefijo-icono"><Icono nombre="buscar" size={16} /></span>
+          <input value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Buscar por código, título, cliente o DNI" aria-label="Buscar casos" />
+        </span>
+        <SelectEnum valores={ENUMS.estadoCaso} valor={estado} alCambiar={(v) => cambiar({ estado: v })} todos="Todos los estados" aria-label="Estado" />
       </div>
       <Aviso>{error}</Aviso>
-      {cargando && !datos && <TablaCargando columnas={6} />}
+      {cargando && !datos && <TablaCargando columnas={7} />}
       {datos && (
         <section className="panel sin-padding">
-          {datos.length === 0 ? <Vacio>No hay casos</Vacio> : (
+          {datos.length === 0 ? (
+            (q || estado) ? (
+              <Vacio icono="buscar" titulo="Sin resultados"
+                accion={<button className="btn btn-sec btn-sm" onClick={() => { setTexto(''); cambiar({ q: '', estado: '' }) }}>Limpiar filtros</button>}>
+                {q ? <>No hay casos que coincidan con «{q}».</> : 'No hay casos con ese estado.'}
+              </Vacio>
+            ) : <Vacio icono="caso" titulo="No hay casos">Todavía no se abrió ninguna investigación.</Vacio>
+          ) : (
             <div className="tabla-scroll">
               <table className="tabla">
                 <thead><tr><th>Código</th><th>Título</th><th>Cliente</th><th>Responsable</th><th>Prioridad</th><th>Estado</th><th>Creado</th></tr></thead>
@@ -34,7 +74,7 @@ export default function Casos() {
                     <tr key={c.id} className="fila-click" onClick={() => navigate(`/casos/${c.id}`)}>
                       <td className="mono">{c.codigo}</td>
                       <td><strong>{c.titulo}</strong></td>
-                      <td>{c.cliente ? `${c.cliente.nombres} ${c.cliente.apellidos}` : '—'}</td>
+                      <td>{c.cliente ? <>{c.cliente.nombres} {c.cliente.apellidos}<br /><small className="muted">DNI {c.cliente.dni}</small></> : '—'}</td>
                       <td>{c.responsable ? `${c.responsable.nombres} ${c.responsable.apellidos}` : '—'}</td>
                       <td><Badge valor={c.prioridad} /></td>
                       <td><Badge valor={c.estado} /></td>
@@ -47,7 +87,7 @@ export default function Casos() {
           )}
         </section>
       )}
-      <FormCaso abierto={creando} alCerrar={() => setCreando(false)} alGuardar={(c) => navigate(`/casos/${c.id}`)} />
+      {puedeGestionar && <FormCaso abierto={creando} alCerrar={() => setCreando(false)} alGuardar={(c) => navigate(`/casos/${c.id}`)} />}
     </>
   )
 }

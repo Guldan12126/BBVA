@@ -47,4 +47,9 @@ public interface AlertaRepository extends JpaRepository<Alerta, Long>, JpaSpecif
 
     List<Alerta> findByFechaDecisionBetween(LocalDateTime desde, LocalDateTime hasta);
 
+
+    /** Alertas por comercio: [comercioId, total]. */
+    @org.springframework.data.jpa.repository.Query(
+            "select a.transaccion.comercio.id, count(a) from Alerta a group by a.transaccion.comercio.id")
+    List<Object[]> alertasPorComercio();
 }

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import api, { mensajeError } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
+import { ModalAtencion, ModalEscalar, escalarAlerta, registrarLlamada } from '../components/AccionesAlerta'
 import Icono from '../components/Icono'
 import { Aviso, Badge, Campo, Cargando, Detalles, Interruptor, MedidorRiesgo, Modal, Opciones, PieModal, Vacio } from '../components/UI'
 import useApi from '../hooks/useApi'
@@ -54,10 +55,12 @@ export default function AlertaDetalle() {
     setErrorAccion(null)
     setOcupado(true)
     try {
-      const { data } = await peticion()
+      const res = await peticion()
+      const data = res?.data
       if (data?.id === a.id) setDatos(data)
       else recargar()
-      setAviso(mensajeOk)
+      if (res?.parcial) setErrorAccion(res.mensaje)
+      else setAviso(res?.mensaje || mensajeOk)
       setModal(null)
       historial.recargar()
       comentarios.recargar()
@@ -165,7 +168,7 @@ export default function AlertaDetalle() {
           )}
           {activa && puede('asignarAlerta') && <button className="btn btn-sec" onClick={() => abrir('asignar')}><Icono nombre="usuarios" size={16} /> Asignar</button>}
           {activa && puede('escalarAlerta') && a.estado !== 'ESCALADA' && (
-            <button className="btn btn-sec" onClick={() => abrir('escalar')}><Icono nombre="flecha" size={16} /> Escalar</button>
+            <button className="btn btn-sec" onClick={() => abrir('escalar')}><Icono nombre="flecha" size={16} /> Escalar / transferir</button>
           )}
           {activa && puede('registrarAtencion') && <button className="btn btn-sec" onClick={() => abrir('atencion')}><Icono nombre="telefono" size={16} /> Registrar llamada</button>}
           {activa && puede('reenviarNotificacion') && (
@@ -306,19 +309,16 @@ export default function AlertaDetalle() {
       <ModalDecision abierto={modal === 'decidir'} alCerrar={cerrar} error={errorAccion} enviando={ocupado}
         monto={moneda(tx.monto, tx.moneda)} cliente={cliente ? `${cliente.nombres} ${cliente.apellidos}` : null}
         alEnviar={(body) => accion(() => api.patch(`/api/alertas/${id}/decision`, body), body.esFraude ? 'Fraude confirmado' : 'Alerta descartada como falso positivo')} />
-      <ModalTexto abierto={modal === 'escalar'} titulo="Escalar alerta" icono="flecha" tono="naranja"
-        subtitulo="El supervisor de agencia revisará la alerta y tomará la decisión"
-        etiqueta="Motivo" placeholder="Explica por qué necesitas que la revise un supervisor" textoBoton="Escalar alerta"
-        error={errorAccion} enviando={ocupado} alCerrar={cerrar}
-        alEnviar={(motivo) => accion(() => api.patch(`/api/alertas/${id}/escalar`, { motivo }), 'Alerta escalada')} />
+      <ModalEscalar abierto={modal === 'escalar'} alerta={a} error={errorAccion} enviando={ocupado} alCerrar={cerrar}
+        alEnviar={(cuerpo) => accion(() => escalarAlerta(id, cuerpo))} />
       <ModalAsignar abierto={modal === 'asignar'} error={errorAccion} enviando={ocupado} actual={a.asignadoA?.id} alCerrar={cerrar}
         alEnviar={(usuarioId) => accion(() => api.patch(`/api/alertas/${id}/asignar`, { usuarioId: Number(usuarioId) }), 'Alerta asignada')} />
       {modal === 'caso' && (
         <FormCaso abierto alertaInicial={a.id} clienteId={cliente?.id} alCerrar={cerrar}
           alGuardar={(caso) => navigate(`/casos/${caso.id}`)} />
       )}
-      <ModalAtencion abierto={modal === 'atencion'} error={errorAccion} enviando={ocupado} cliente={cliente} alCerrar={cerrar}
-        alEnviar={(body) => accion(() => api.post('/api/atencion', { ...body, alertaId: Number(id) }), 'Atención registrada')} />
+      <ModalAtencion abierto={modal === 'atencion'} alerta={a} puedeEscalar={puede('escalarAlerta')} error={errorAccion} enviando={ocupado}
+        alCerrar={cerrar} alEnviar={(cuerpo) => accion(() => registrarLlamada(id, cuerpo))} />
     </>
   )
 }
@@ -498,40 +498,6 @@ function ModalAsignar({ abierto, alCerrar, alEnviar, error, enviando, actual }) 
           </ul>
         </div>
         <PieModal alCancelar={alCerrar} enviando={enviando} texto="Asignar" icono="usuarios" deshabilitado={!usuarioId} />
-      </form>
-    </Modal>
-  )
-}
-
-function ModalAtencion({ abierto, alCerrar, alEnviar, error, enviando, cliente }) {
-  const [resultado, setResultado] = useState('')
-  const [observacion, setObservacion] = useState('')
-  const [bloquearTarjeta, setBloquearTarjeta] = useState(false)
-  return (
-    <Modal titulo="Registrar llamada al cliente"
-      subtitulo={cliente ? `${cliente.nombres} ${cliente.apellidos}${cliente.telefono ? ` · ${cliente.telefono}` : ''}` : undefined}
-      icono="telefono" abierto={abierto} alCerrar={alCerrar} ancho={620}>
-      <form className="form-modal" onSubmit={(e) => { e.preventDefault(); alEnviar({ resultado, observacion, bloquearTarjeta }) }}>
-        <Aviso>{error}</Aviso>
-        <Opciones etiqueta="Resultado de la llamada" nombre="resultado" valor={resultado} alCambiar={setResultado} columnas={3}
-          opciones={[
-            { valor: 'CLIENTE_CONFIRMA', texto: 'Confirma', descripcion: 'Reconoce la compra', icono: 'escudo-ok', tono: 'verde' },
-            { valor: 'CLIENTE_NIEGA', texto: 'Niega', descripcion: 'No reconoce la compra', icono: 'escudo-alerta', tono: 'rojo' },
-            { valor: 'NO_CONTESTA', texto: 'No contesta', descripcion: 'Volver a intentar', icono: 'reloj', tono: 'naranja' },
-          ]} />
-        {resultado === 'CLIENTE_CONFIRMA' && !bloquearTarjeta && (
-          <div className="nota nota-info">
-            <Icono nombre="check" size={16} />
-            <span>Al registrar, la compra se aprueba y la tarjeta se libera de inmediato (queda como falso positivo).</span>
-          </div>
-        )}
-        <Campo etiqueta="Observación" opcional extra={`${observacion.length}/1000`}>
-          <textarea value={observacion} onChange={(e) => setObservacion(e.target.value)} rows={3} maxLength={1000}
-            placeholder="Resume lo que dijo el cliente" />
-        </Campo>
-        <Interruptor activo={bloquearTarjeta} alCambiar={setBloquearTarjeta} titulo="Bloquear la tarjeta a pedido del cliente"
-          descripcion="Úsalo si el cliente lo solicita durante la llamada" />
-        <PieModal alCancelar={alCerrar} enviando={enviando} texto="Registrar llamada" icono="telefono" deshabilitado={!resultado} />
       </form>
     </Modal>
   )

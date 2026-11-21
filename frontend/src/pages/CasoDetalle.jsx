@@ -1,8 +1,11 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import api, { mensajeError } from '../api/client'
+import { useAuth } from '../auth/AuthContext'
+import Icono from '../components/Icono'
 import { Aviso, Badge, BarraRiesgo, Campo, Cargando, Detalles, Encabezado, Modal, SelectEnum, Vacio } from '../components/UI'
 import useApi from '../hooks/useApi'
+import { PERMISOS } from '../menu'
 import { fechaHora, moneda } from '../utils/formato'
 import { ModalTexto } from './AlertaDetalle'
 import { SelectorAlertas } from './Casos'
@@ -10,6 +13,8 @@ import { SelectorAlertas } from './Casos'
 export default function CasoDetalle() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { tieneRol } = useAuth()
+  const puedeGestionar = tieneRol(...PERMISOS.gestionarCaso)
   const { datos: c, setDatos, cargando, error } = useApi(`/api/casos/${id}`)
   const alertas = useApi(`/api/casos/${id}/alertas`)
   const [modal, setModal] = useState(null)
@@ -44,7 +49,16 @@ export default function CasoDetalle() {
       <Aviso tipo="ok" alCerrar={() => setAviso(null)}>{aviso}</Aviso>
       <Aviso alCerrar={() => setErrorAccion(null)}>{!modal && errorAccion}</Aviso>
 
-      {!cerrado && (
+      {!puedeGestionar && (
+        <div className="nota nota-info nota-pagina">
+          <Icono nombre="ojo" size={16} />
+          <span><strong>Modo consulta.</strong> {cerrado
+            ? 'La investigación terminó: puedes informar al cliente la conclusión.'
+            : 'La investigación sigue en curso con el equipo de fraude.'}</span>
+        </div>
+      )}
+
+      {!cerrado && puedeGestionar && (
         <div className="barra-acciones">
           <Badge valor={c.estado} />
           <div className="espaciador" />
