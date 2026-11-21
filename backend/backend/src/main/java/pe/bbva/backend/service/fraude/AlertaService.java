@@ -199,6 +199,11 @@ public class AlertaService {
         if (a.getEstado() == EstadoAlerta.CONFIRMADA || a.getEstado() == EstadoAlerta.DESCARTADA) {
             throw new BusinessException(ErrorCode.ALERTA_YA_DECIDIDA);
         }
+        // El Supervisor solo resuelve las alertas que le escalaron; el resto lo decide el Analista
+        if (SecurityUtils.tieneRol(Rol.SUPERVISOR) && a.getEstado() != EstadoAlerta.ESCALADA) {
+            throw new BusinessException(ErrorCode.ACCESO_DENEGADO,
+                    "El supervisor solo puede decidir alertas escaladas");
+        }
         Usuario analista = securityUtils.usuarioActual();
         LocalDateTime ahora = LocalDateTime.now();
 

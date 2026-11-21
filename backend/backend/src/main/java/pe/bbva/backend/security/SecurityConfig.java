@@ -76,6 +76,9 @@ public class SecurityConfig {
                         .requestMatchers(Constantes.RUTAS_PUBLICAS).permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
+                        // ---------- Lista corta de analistas/operadores para asignar alertas ----------
+                        .requestMatchers(HttpMethod.GET, "/api/usuarios/asignables").hasAnyRole(ADMIN, SUPERVISOR, ANALISTA)
+
                         // ---------- Solo Administrador ----------
                         .requestMatchers("/api/usuarios/**", "/api/simulador/**", "/api/auditoria/accesos/**").hasRole(ADMIN)
                         .requestMatchers(HttpMethod.POST, "/api/transacciones").hasRole(ADMIN)
@@ -89,6 +92,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/reglas/**", "/api/lista-negra/**")
                         .hasAnyRole(ADMIN, ANALISTA, SUPERVISOR)
                         .requestMatchers(HttpMethod.POST, "/api/lista-negra/**").hasAnyRole(ADMIN, ANALISTA)
+                        .requestMatchers(HttpMethod.PATCH, "/api/lista-negra/*/desactivar").hasAnyRole(ADMIN, ANALISTA)
                         .requestMatchers("/api/reglas/**", "/api/lista-negra/**").hasRole(ADMIN)
 
                         // ---------- Reportes y auditoría ----------
@@ -96,11 +100,11 @@ public class SecurityConfig {
                         .requestMatchers("/api/auditoria/**").hasAnyRole(ADMIN, SUPERVISOR, ANALISTA)
 
                         // ---------- Alertas ----------
-                        .requestMatchers(HttpMethod.PATCH, "/api/alertas/*/decision").hasRole(ANALISTA)
+                        .requestMatchers(HttpMethod.PATCH, "/api/alertas/*/decision").hasAnyRole(ANALISTA, SUPERVISOR)
                         .requestMatchers(HttpMethod.PATCH, "/api/alertas/*/escalar").hasAnyRole(ANALISTA, SUPERVISOR)
                         .requestMatchers(HttpMethod.PATCH, "/api/alertas/*/asignar").hasAnyRole(ADMIN, SUPERVISOR, ANALISTA)
                         .requestMatchers(HttpMethod.PATCH, "/api/alertas/*/tomar").hasAnyRole(ANALISTA, OPERADOR)
-                        .requestMatchers(HttpMethod.POST, "/api/alertas/*/comentarios").hasAnyRole(ANALISTA, SUPERVISOR)
+                        .requestMatchers(HttpMethod.POST, "/api/alertas/*/comentarios").hasAnyRole(ANALISTA, SUPERVISOR, OPERADOR)
 
                         // ---------- Casos ----------
                         .requestMatchers("/api/casos/**").hasAnyRole(ANALISTA, SUPERVISOR)

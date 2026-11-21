@@ -42,6 +42,15 @@ public class UsuarioService {
         return rol == null ? usuarioRepository.findAll() : usuarioRepository.findByRol(rol);
     }
 
+    /** Analistas y operadores activos: a quienes se les puede asignar una alerta. */
+    @Transactional(readOnly = true)
+    public List<Usuario> asignables() {
+        List<Usuario> lista = new java.util.ArrayList<>(
+                usuarioRepository.findByRolAndEstado(Rol.ANALISTA, EstadoUsuario.ACTIVO));
+        lista.addAll(usuarioRepository.findByRolAndEstado(Rol.OPERADOR, EstadoUsuario.ACTIVO));
+        return lista;
+    }
+
     @Transactional(readOnly = true)
     public Usuario obtener(Long id) {
         return usuarioRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Usuario", id));

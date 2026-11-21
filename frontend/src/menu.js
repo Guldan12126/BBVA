@@ -32,15 +32,17 @@ export const MENU = [
 /** Permisos de acciones concretas (botones), también tomados de SecurityConfig.java. */
 export const PERMISOS = {
   decidirAlerta: ['ANALISTA'],
+  decidirAlertaEscalada: ['ANALISTA', 'SUPERVISOR'],
   escalarAlerta: ['ANALISTA', 'SUPERVISOR'],
   asignarAlerta: ['ADMIN', 'SUPERVISOR', 'ANALISTA'],
   tomarAlerta: ['ANALISTA', 'OPERADOR'],
-  comentarAlerta: ['ANALISTA', 'SUPERVISOR'],
+  comentarAlerta: ['ANALISTA', 'SUPERVISOR', 'OPERADOR'],
   registrarAtencion: ['OPERADOR'],
   reenviarNotificacion: ['OPERADOR', 'ANALISTA'],
   editarCatalogos: ['ADMIN'],
   editarReglas: ['ADMIN'],
   agregarListaNegra: ['ADMIN', 'ANALISTA'],
+  desactivarListaNegra: ['ADMIN', 'ANALISTA'],
   gestionarListaNegra: ['ADMIN'],
   editarModelo: ['ADMIN'],
   verAccesos: ['ADMIN'],

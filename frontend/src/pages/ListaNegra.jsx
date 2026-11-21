@@ -13,6 +13,7 @@ export default function ListaNegra() {
   const [agregando, setAgregando] = useState(false)
   const [errorAccion, setErrorAccion] = useState(null)
   const puedeAgregar = tieneRol(...PERMISOS.agregarListaNegra)
+  const puedeDesactivar = tieneRol(...PERMISOS.desactivarListaNegra)
   const puedeGestionar = tieneRol(...PERMISOS.gestionarListaNegra)
 
   async function ejecutar(peticion) {
@@ -37,7 +38,7 @@ export default function ListaNegra() {
           {datos.length === 0 ? <Vacio>La lista negra está vacía</Vacio> : (
             <div className="tabla-scroll">
               <table className="tabla">
-                <thead><tr><th>Tipo</th><th>Valor</th><th>Motivo</th><th>Vence</th><th>Estado</th><th>Agregado</th>{puedeGestionar && <th />}</tr></thead>
+                <thead><tr><th>Tipo</th><th>Valor</th><th>Motivo</th><th>Vence</th><th>Estado</th><th>Agregado</th>{puedeDesactivar && <th />}</tr></thead>
                 <tbody>
                   {datos.map((l) => (
                     <tr key={l.id} className={l.activo ? '' : 'fila-inactiva'}>
@@ -47,10 +48,10 @@ export default function ListaNegra() {
                       <td>{l.fechaExpiracion ? fechaHora(l.fechaExpiracion) : 'Permanente'}</td>
                       <td><Badge valor={l.activo ? 'ACTIVO' : 'INACTIVO'} /></td>
                       <td>{fechaHora(l.fechaCreacion)}</td>
-                      {puedeGestionar && (
+                      {puedeDesactivar && (
                         <td className="der nowrap">
-                          {l.activo && <button className="btn btn-sec btn-sm" onClick={() => ejecutar(() => api.patch(`/api/lista-negra/${l.id}/desactivar`))}>Desactivar</button>}{' '}
-                          <button className="btn btn-peligro-sec btn-sm" onClick={() => window.confirm('¿Eliminar este registro?') && ejecutar(() => api.delete(`/api/lista-negra/${l.id}`))}>Eliminar</button>
+                          {l.activo && <button className="btn btn-sec btn-sm" onClick={() => window.confirm('¿Desactivar este registro? Las compras que coincidan dejarán de marcarse como críticas.') && ejecutar(() => api.patch(`/api/lista-negra/${l.id}/desactivar`))}>Desactivar</button>}{' '}
+                          {puedeGestionar && <button className="btn btn-peligro-sec btn-sm" onClick={() => window.confirm('¿Eliminar este registro?') && ejecutar(() => api.delete(`/api/lista-negra/${l.id}`))}>Eliminar</button>}
                         </td>
                       )}
                     </tr>

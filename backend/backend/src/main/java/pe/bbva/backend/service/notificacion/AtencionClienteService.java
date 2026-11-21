@@ -65,10 +65,16 @@ public class AtencionClienteService {
             transaccionRepository.save(tx);
             atencion.setTarjetaBloqueada(true);
             alertaService.cambiarPrioridad(alerta, Prioridad.URGENTE);
-        } else if (resultado == ResultadoAtencion.CLIENTE_CONFIRMA) {
-            alertaService.cambiarPrioridad(alerta, Prioridad.BAJA);
         }
         atencionRepository.save(atencion);
+        if (resultado == ResultadoAtencion.CLIENTE_CONFIRMA && !bloquearTarjeta
+                && AlertaService.ACTIVAS.contains(alerta.getEstado())) {
+            // El cliente confirmó por teléfono que la compra es suya: se aprueba y se libera la tarjeta
+            // sin esperar al analista. Queda como falso positivo (también sirve de etiqueta para el modelo).
+            alertaService.decidir(alertaId, false,
+                    "Cliente confirmó la compra por teléfono" + (observacion != null && !observacion.isBlank()
+                            ? ": " + observacion : ""), false);
+        }
         auditoriaService.registrar(operador, alerta, TipoAccion.ATENCION_CLIENTE,
                 resultado + (observacion != null ? ": " + observacion : ""));
         return atencion;

@@ -69,6 +69,21 @@ public class UsuarioController {
                 .toList();
     }
 
+    /** Datos mínimos de un usuario al que se le puede asignar una alerta. */
+    public record UsuarioAsignable(Long id, String nombre, Rol rol) {
+    }
+
+    /**
+     * Analistas y operadores activos, para el desplegable "Asignar alerta".
+     * La pueden usar Supervisor y Analista (el resto de /api/usuarios es solo del Administrador).
+     */
+    @GetMapping("/asignables")
+    public List<UsuarioAsignable> asignables() {
+        return usuarioService.asignables().stream()
+                .map(u -> new UsuarioAsignable(u.getId(), u.getNombreCompleto(), u.getRol()))
+                .toList();
+    }
+
     @GetMapping("/{id}")
     public Usuario obtener(@PathVariable Long id) {
         return usuarioService.obtener(id);

@@ -32,6 +32,8 @@ export default function AlertaDetalle() {
   const cliente = tarjeta?.cliente
   const activa = ['PENDIENTE', 'ASIGNADA', 'EN_REVISION', 'ESCALADA'].includes(a.estado)
   const puede = (accion) => tieneRol(...PERMISOS[accion])
+  // El Supervisor solo decide las alertas que le escalaron
+  const puedeDecidir = puede('decidirAlerta') || (a.estado === 'ESCALADA' && puede('decidirAlertaEscalada'))
 
   /** Ejecuta una acción, muestra el resultado y recarga todo lo relacionado. */
   async function accion(peticion, mensajeOk) {
@@ -83,7 +85,7 @@ export default function AlertaDetalle() {
           </button>
         )}
         {!a.caso && puede('crearCaso') && <button className="btn btn-sec" onClick={() => setModal('caso')}>Crear caso</button>}
-        {activa && puede('decidirAlerta') && <button className="btn btn-primario" onClick={() => setModal('decidir')}>Tomar decisión</button>}
+        {activa && puedeDecidir && <button className="btn btn-primario" onClick={() => setModal('decidir')}>Tomar decisión</button>}
       </div>
 
       <div className="grid-2">
@@ -233,7 +235,7 @@ function ModalDecision({ abierto, alCerrar, alEnviar, error }) {
   const [bloquearTarjeta, setBloquearTarjeta] = useState(true)
 
   return (
-    <Modal titulo="Decisión del analista" abierto={abierto} alCerrar={alCerrar}>
+    <Modal titulo="Tomar decisión" abierto={abierto} alCerrar={alCerrar}>
       <form onSubmit={(e) => { e.preventDefault(); alEnviar({ esFraude, comentario, bloquearTarjeta: esFraude && bloquearTarjeta }) }}>
         <Aviso>{error}</Aviso>
         <div className="opciones-decision">
@@ -283,31 +285,22 @@ export function ModalTexto({ abierto, titulo, etiqueta: texto, alCerrar, alEnvia
 }
 
 function ModalAsignar({ abierto, alCerrar, alEnviar, error }) {
-  const analistas = useApi(abierto ? '/api/usuarios' : null, { rol: 'ANALISTA' })
-  const operadores = useApi(abierto ? '/api/usuarios' : null, { rol: 'OPERADOR' })
+  // Analistas y operadores activos (endpoint permitido para Admin, Supervisor y Analista)
+  const asignables = useApi(abierto ? '/api/usuarios/asignables' : null)
   const [usuarioId, setUsuarioId] = useState('')
-  const lista = [...(analistas.datos || []), ...(operadores.datos || [])].filter((u) => u.estado === 'ACTIVO')
-  // Solo el Administrador puede listar usuarios; los demás escriben el ID
-  const sinPermiso = !!analistas.error
 
   return (
     <Modal titulo="Asignar alerta" abierto={abierto} alCerrar={alCerrar}>
       <form onSubmit={(e) => { e.preventDefault(); alEnviar(usuarioId) }}>
-        <Aviso>{error}</Aviso>
-        {sinPermiso ? (
-          <Campo etiqueta="ID del usuario" ayuda="Tu rol no puede listar usuarios; escribe el ID del analista u operador.">
-            <input type="number" value={usuarioId} onChange={(e) => setUsuarioId(e.target.value)} required />
-          </Campo>
-        ) : (
-          <Campo etiqueta="Asignar a">
-            <select value={usuarioId} onChange={(e) => setUsuarioId(e.target.value)} required>
-              <option value="">Selecciona…</option>
-              {lista.map((u) => (
-                <option key={u.id} value={u.id}>{u.nombres} {u.apellidos} — {etiqueta(u.rol)}</option>
-              ))}
-            </select>
-          </Campo>
-        )}
+        <Aviso>{error || asignables.error}</Aviso>
+        <Campo etiqueta="Asignar a">
+          <select value={usuarioId} onChange={(e) => setUsuarioId(e.target.value)} required>
+            <option value="">{asignables.cargando ? 'Cargando…' : 'Selecciona…'}</option>
+            {(asignables.datos || []).map((u) => (
+              <option key={u.id} value={u.id}>{u.nombre} — {etiqueta(u.rol)}</option>
+            ))}
+          </select>
+        </Campo>
         <div className="modal-pie">
           <button type="button" className="btn btn-sec" onClick={alCerrar}>Cancelar</button>
           <button className="btn btn-primario">Asignar</button>
@@ -328,6 +321,9 @@ function ModalAtencion({ abierto, alCerrar, alEnviar, error }) {
         <Campo etiqueta="Resultado">
           <SelectEnum valores={ENUMS.resultadoAtencion} valor={resultado} alCambiar={setResultado} todos="Selecciona…" required />
         </Campo>
+        {resultado === 'CLIENTE_CONFIRMA' && !bloquearTarjeta && (
+          <Aviso tipo="info">Al registrar, la compra se aprueba y la tarjeta se libera de inmediato (queda como falso positivo).</Aviso>
+        )}
         <Campo etiqueta="Observación">
           <textarea value={observacion} onChange={(e) => setObservacion(e.target.value)} rows={3} maxLength={1000} />
         </Campo>
