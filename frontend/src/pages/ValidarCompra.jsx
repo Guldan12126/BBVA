@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import api, { mensajeError } from '../api/client'
+import BotonTema from '../components/BotonTema'
 import { Aviso, Cargando } from '../components/UI'
 import useApi from '../hooks/useApi'
 import { etiqueta, fechaHora, moneda } from '../utils/formato'
@@ -31,6 +32,7 @@ export default function ValidarCompra() {
 
   return (
     <div className="pantalla-publica">
+      <BotonTema flotante />
       <div className="tarjeta-publica">
         <div className="marca marca-grande">
           <img src="/escudo.svg" alt="" width="40" height="40" />

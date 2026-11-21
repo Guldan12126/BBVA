@@ -1,3 +1,4 @@
+import BotonTema from './BotonTema'
 import Icono from './Icono'
 import logoBbva from '../assets/images/bbva-logo.webp'
 
@@ -8,6 +9,7 @@ import logoBbva from '../assets/images/bbva-logo.webp'
 export default function PantallaAcceso({ titulo, texto, items, children }) {
   return (
     <div className="login">
+      <BotonTema flotante />
       <aside className="login-marca">
         <span className="login-circulo login-circulo-1" aria-hidden="true" />
         <span className="login-circulo login-circulo-2" aria-hidden="true" />

@@ -20,19 +20,18 @@
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --primario: #4c9be0;
-    --primario-oscuro: #050f22;
-    --primario-claro: #14304d;
-    --fondo: #0d1420;
-    --superficie: #151e2c;
-    --texto: #e6ebf2;
-    --texto-suave: #9aa6b6;
-    --borde: #283447;
-    --sombra: 0 1px 3px rgba(0, 0, 0, 0.4);
-    color-scheme: dark;
-  }
+/* Tema oscuro: se activa con <html data-theme="dark"> (ver index.html y hooks/useTema.js) */
+:root[data-theme='dark'] {
+  --primario: #4c9be0;
+  --primario-oscuro: #050f22;
+  --primario-claro: #14304d;
+  --fondo: #0d1420;
+  --superficie: #151e2c;
+  --texto: #e6ebf2;
+  --texto-suave: #9aa6b6;
+  --borde: #283447;
+  --sombra: 0 1px 3px rgba(0, 0, 0, 0.4);
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -445,44 +444,44 @@ a.login-boton:hover { text-decoration: none; }
    El login, la recuperación de contraseña y la validación de compra
    no usan .app, así que no se ven afectados.
    ========================================================= */
+/* Tema claro: blanco + azules BBVA del login (#072146 → #004481 → #1464a5) y celeste */
 .app {
   --primario: #1464a5;
-  --primario-hover: #0f5189;
-  --primario-claro: #eaf2fb;
-  --acento: #2dcccd;
-  --fondo: #f4f6fa;
+  --primario-hover: #004481;
+  --primario-claro: #e6f2fc;
+  --acento: #5bbeff;
+  --fondo: #f3f7fc;
   --superficie: #ffffff;
-  --superficie-2: #f8fafc;
-  --texto: #121a26;
-  --texto-suave: #5f6b7c;
-  --texto-tenue: #8a95a5;
-  --borde: #e3e8ef;
+  --superficie-2: #f5f9fd;
+  --texto: #0b1f3a;
+  --texto-suave: #52627a;
+  --texto-tenue: #8494aa;
+  --borde: #dde6f0;
   --sombra: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06);
   --sombra-alta: 0 12px 32px rgba(16, 24, 40, 0.12);
   --radio: 12px;
-  --sidebar: #071d3d;
-  --sidebar-2: #0a2a56;
+  --sidebar: #072146;
+  --sidebar-2: #004481;
   font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   background: var(--fondo);
   color: var(--texto);
 }
-@media (prefers-color-scheme: dark) {
-  .app {
-    --primario: #4c9be0;
-    --primario-hover: #6aaee8;
-    --primario-claro: #132b46;
-    --fondo: #0b111b;
-    --superficie: #121a27;
-    --superficie-2: #0f1622;
-    --texto: #e7ecf3;
-    --texto-suave: #9ba7b8;
-    --texto-tenue: #6f7b8c;
-    --borde: #222d3d;
-    --sombra: 0 1px 2px rgba(0, 0, 0, 0.35);
-    --sombra-alta: 0 14px 36px rgba(0, 0, 0, 0.5);
-    --sidebar: #070d18;
-    --sidebar-2: #0b1526;
-  }
+:root[data-theme='dark'] .app {
+  --primario: #4c9be0;
+  --primario-hover: #6aaee8;
+  --acento: #2dcccd;
+  --primario-claro: #132b46;
+  --fondo: #0b111b;
+  --superficie: #121a27;
+  --superficie-2: #0f1622;
+  --texto: #e7ecf3;
+  --texto-suave: #9ba7b8;
+  --texto-tenue: #6f7b8c;
+  --borde: #222d3d;
+  --sombra: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --sombra-alta: 0 14px 36px rgba(0, 0, 0, 0.5);
+  --sidebar: #070d18;
+  --sidebar-2: #0b1526;
 }
 
 .app h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
@@ -1836,3 +1835,12 @@ a.login-boton:hover { text-decoration: none; }
   .app .auditoria-item::before { left: calc(16px + 15px); }
   .app .comercios-grid { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ---------- Botón para alternar tema claro / oscuro ---------- */
+.btn-tema { cursor: pointer; }
+.btn-tema-flotante {
+  position: fixed; top: 16px; right: 16px; z-index: 50;
+  background: var(--superficie); border: 1px solid var(--borde); color: var(--texto-suave);
+  box-shadow: var(--sombra);
+}
+.btn-tema-flotante:hover { color: var(--primario); }

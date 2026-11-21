@@ -5,6 +5,7 @@ import useTiempoReal from '../hooks/useTiempoReal'
 import { MENU } from '../menu'
 import { etiqueta, moneda } from '../utils/formato'
 import logoBbva from '../assets/images/bbva-logo.webp'
+import BotonTema from './BotonTema'
 import Icono from './Icono'
 import { Badge, Cargando } from './UI'
 
@@ -127,6 +128,7 @@ export default function Layout() {
             <div className={`estado-conexion ${conectado ? 'ok' : ''}`} title="Alertas en tiempo real">
               <span className="punto" /> {conectado ? 'En vivo' : 'Sin conexión'}
             </div>
+            <BotonTema />
             <Link to="/perfil" className="btn-icono" title="Mi cuenta / cambiar contraseña">
               <Icono nombre="llave" />
             </Link>
